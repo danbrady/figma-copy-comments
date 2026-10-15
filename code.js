@@ -1,4 +1,4 @@
-// Migrate Comments — main thread.
+// Copy Comments — main thread.
 // The Plugin API has no comments API, so all REST calls happen in ui.html.
 // This side only does what needs the document: node lookups, token storage,
 // and remembering whether the welcome screen was dismissed.
@@ -61,7 +61,7 @@ async function handleMessage(msg) {
     }
   } catch (err) {
     if (msg.requestId) reply(msg.requestId, null, String(err && err.message || err));
-    else figma.notify('Migrate Comments error: ' + err, { error: true });
+    else figma.notify('Copy Comments error: ' + err, { error: true });
   }
 }
 

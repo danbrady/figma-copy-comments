@@ -54,7 +54,7 @@ test('root and reply messages start with a label, then the comment, a rule, and 
     resolved_at: '2026-03-20T20:05:00Z', message: 'Fix the padding', reactions: [{ emoji: ':+1:', user: user('Sam') }]
   };
   assert.equal(L.buildRootMessage(root, null), [
-    '[Migrated comment]',
+    '[Copied comment]',
     'Fix the padding',
     '———',
     'Jane Doe · Mar 14, 2026, 10:42 AM ET',
@@ -63,7 +63,7 @@ test('root and reply messages start with a label, then the comment, a rule, and 
   ].join('\n'));
 
   assert.equal(L.buildRootMessage({ ...root, resolved_at: null, reactions: [] }, 'Page 1 › Card'), [
-    '[Migrated comment]',
+    '[Copied comment]',
     'Fix the padding',
     '———',
     'Jane Doe · Mar 14, 2026, 10:42 AM ET',
@@ -71,10 +71,10 @@ test('root and reply messages start with a label, then the comment, a rule, and 
   ].join('\n'));
 
   const reply = L.buildReplyMessage({ id: '222', user: user('Sam'), created_at: '2026-03-15T13:10:00Z', message: 'Done', reactions: [] });
-  assert.equal(reply, '[Migrated reply]\nDone\n———\nSam · Mar 15, 2026, 9:10 AM ET');
+  assert.equal(reply, '[Copied reply]\nDone\n———\nSam · Mar 15, 2026, 9:10 AM ET');
 
   const empty = L.buildReplyMessage({ id: '333', user: null, created_at: '2026-03-15T13:10:00Z', message: '', reactions: [] });
-  assert.equal(empty, '[Migrated reply]\n———\nunknown · Mar 15, 2026, 9:10 AM ET');
+  assert.equal(empty, '[Copied reply]\n———\nunknown · Mar 15, 2026, 9:10 AM ET');
 });
 
 test('fingerprint ignores the Location line and whitespace drift, and skips ordinary comments', () => {
@@ -89,8 +89,8 @@ test('fingerprint ignores the Location line and whitespace drift, and skips ordi
   // A root and a reply with the same author, time, and text are different comments.
   assert.notEqual(L.fingerprint(matched), L.fingerprint(L.buildReplyMessage(c)));
   assert.equal(L.fingerprint('A normal comment'), null);
-  assert.equal(L.fingerprint('I wrote [Migrated comment] in passing'), null);
-  assert.equal(L.fingerprint('[Migrated comment] typed by hand'), null);
+  assert.equal(L.fingerprint('I wrote [Copied comment] in passing'), null);
+  assert.equal(L.fingerprint('[Copied comment] typed by hand'), null);
   // The final Location line is dropped even when the original text is empty.
   const bare = { ...c, message: '' };
   assert.equal(L.fingerprint(L.buildRootMessage(bare, 'Page › Gone')), L.fingerprint(L.buildRootMessage(bare, null)));
@@ -249,8 +249,8 @@ test('buildPlan counts migrated comments that match nothing in the export', () =
   const existing = [
     { id: 'n10', message: plan.threads[0].message },
     // Same label, but the text differs from anything this export would post.
-    { id: 'old', message: '[Migrated comment]\nan older version\n———\nA · Jan 1, 2026, 7:00 AM ET' },
-    { id: 'old2', parent_id: 'old', message: '[Migrated reply]\nreply\n———\nB · Jan 1, 2026, 8:00 AM ET' },
+    { id: 'old', message: '[Copied comment]\nan older version\n———\nA · Jan 1, 2026, 7:00 AM ET' },
+    { id: 'old2', parent_id: 'old', message: '[Copied reply]\nreply\n———\nB · Jan 1, 2026, 8:00 AM ET' },
     { id: 'x', message: 'an ordinary comment' }
   ];
   const rerun = L.buildPlan(data, existing, { '1:2': '1:2' });
@@ -260,14 +260,14 @@ test('buildPlan counts migrated comments that match nothing in the export', () =
 
 test('findAltered flags posts whose saved text differs from what was sent', () => {
   const sent = [
-    { id: 'a', message: '[Migrated comment]\nhi :+1:\n———\nA · Jan 1, 2026, 7:00 AM ET' },
-    { id: 'b', message: '[Migrated reply]\nok\n———\nB · Jan 1, 2026, 8:00 AM ET' },
-    { id: 'c', message: '[Migrated reply]\ngone\n———\nB · Jan 1, 2026, 9:00 AM ET' }
+    { id: 'a', message: '[Copied comment]\nhi :+1:\n———\nA · Jan 1, 2026, 7:00 AM ET' },
+    { id: 'b', message: '[Copied reply]\nok\n———\nB · Jan 1, 2026, 8:00 AM ET' },
+    { id: 'c', message: '[Copied reply]\ngone\n———\nB · Jan 1, 2026, 9:00 AM ET' }
   ];
   const saved = [
-    { id: 'a', message: '[Migrated comment]\nhi 👍\n———\nA · Jan 1, 2026, 7:00 AM ET' },
+    { id: 'a', message: '[Copied comment]\nhi 👍\n———\nA · Jan 1, 2026, 7:00 AM ET' },
     // Trailing whitespace is normalized, so this one still matches.
-    { id: 'b', message: '[Migrated reply]\nok  \n———\nB · Jan 1, 2026, 8:00 AM ET\n' }
+    { id: 'b', message: '[Copied reply]\nok  \n———\nB · Jan 1, 2026, 8:00 AM ET\n' }
   ];
   const altered = plain(L.findAltered(sent, saved));
   assert.deepEqual(altered.map((a) => a.id), ['a']);
