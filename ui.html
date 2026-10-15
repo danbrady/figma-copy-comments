@@ -118,22 +118,22 @@
 <!-- WELCOME: shown on first run, until dismissed with "Don't show this again" -->
 <section class="welcome" id="panel-welcome" hidden>
   <h2>Before you start, make a personal access token in each Figma environment</h2>
-  <p class="muted">Migrating between two environments, such as commercial Figma and Figma for Government, needs two tokens.</p>
+  <p class="muted">Copying between two environments, such as commercial Figma and Figma for Government, needs two tokens.</p>
   <h3>To make a token</h3>
   <ol>
     <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
-    <li>Name it "Copy Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time migration</li>
+    <li>Name it "Copy Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time copy</li>
     <li>Turn on only these permission scopes:
       <div class="token-cards">
         <div class="token-card">
           <strong>Export token</strong>
-          <p>Where you're migrating FROM</p>
+          <p>Where you're copying FROM</p>
           <span class="scopes-label">Permission scopes</span>
           <code>file_comments:read</code>
         </div>
         <div class="token-card">
           <strong>Import token</strong>
-          <p>Where you're migrating TO</p>
+          <p>Where you're copying TO</p>
           <span class="scopes-label">Permission scopes</span>
           <code>file_comments:read</code> + <code>file_comments:write</code>
         </div>
@@ -156,7 +156,7 @@
 
 <!-- EXPORT -->
 <section id="panel-export" hidden>
-  <p class="muted">Run this in the file you're migrating <strong>FROM</strong>.</p>
+  <p class="muted">Run this in the file you're copying <strong>FROM</strong>.</p>
   <div class="step">
     <label for="ex-link">Link to this file</label>
     <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off">
@@ -178,7 +178,7 @@
 
 <!-- IMPORT -->
 <section id="panel-import" hidden>
-  <p class="muted">Run this in the file you're migrating <strong>TO</strong>.</p>
+  <p class="muted">Run this in the file you're copying <strong>TO</strong>.</p>
   <div class="step">
     <label for="im-link">Link to this file</label>
     <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off">
@@ -199,7 +199,7 @@
   <div class="step">
     <label class="check"><input type="checkbox" id="im-skip-resolved"> Skip resolved threads</label>
     <div class="hint">Leaves out resolved threads and their replies. Figma's API can't resolve comments,
-      so migrated threads always show as open. A thread that was resolved says
+      so copied threads always show as open. A thread that was resolved says
       <strong>✅ Resolved</strong> and when in its text.</div>
   </div>
   <button class="secondary" id="im-preview">Preview</button>
@@ -281,9 +281,9 @@ function buildReplyMessage(c) {
   return buildMessage(c, '[Copied reply]', []).join('\n');
 }
 
-// Identifies a migrated comment by everything the plugin wrote into it except the
+// Identifies a copied comment by everything the plugin wrote into it except the
 // final Location line, which changes if frames are fixed between runs.
-// Comments that don't start with a migration label get null.
+// Comments that don't start with a copy label get null.
 function fingerprint(message) {
   var lines = String(message || '').replace(/\r\n?/g, '\n').trim().split('\n')
     .map(function (l) { return l.replace(/\s+$/, ''); });
@@ -388,7 +388,7 @@ function buildPlan(exportData, existingComments, nodeMap, options) {
   var copies = matchCopies(plan.threads, existingComments);
   var matched = {};
   Object.keys(copies).forEach(function (id) { if (copies[id]) matched[copies[id].id] = true; });
-  // Comments with a migration label that match nothing in this export: a re-run may duplicate them.
+  // Comments with a copy label that match nothing in this export: a re-run may duplicate them.
   plan.counts.unrecognized = (existingComments || []).filter(function (c) {
     return fingerprint(c.message) && !matched[c.id];
   }).length;
@@ -426,7 +426,7 @@ function verifyImport(plan, targetComments) {
 }
 
 // Posts that Figma saved with different text than was sent. The plugin can't
-// recognize those as migrated, so running Import again would post them twice.
+// recognize those as copied, so running Import again would post them twice.
 function findAltered(sent, targetComments) {
   var byId = {};
   (targetComments || []).forEach(function (c) { byId[c.id] = c; });
@@ -611,7 +611,7 @@ function showTab(mode) {
 }
 
 var UNMATCHED_NOTE = 'Some comments were pinned to frames that this file doesn\u2019t have, usually because ' +
-  'a frame was renamed, moved, or deleted after the comment was made. Those comments are still migrated: each is ' +
+  'a frame was renamed, moved, or deleted after the comment was made. Those comments are still copied: each is ' +
   'placed near its old position, and its text says which frame it was on.';
 
 // Static, trusted markup. Filled shapes use currentColor; the marks inside are white.
@@ -787,7 +787,7 @@ async function runPreview() {
       throw new Error('That file was not exported by Copy Comments.');
     }
     if (importData.source.apiHost === input.link.apiHost && importData.source.fileKey === input.link.key) {
-      throw new Error('This is the same file the comments were exported from. Open the file you\u2019re migrating TO and use the Import tab there.');
+      throw new Error('This is the same file the comments were exported from. Open the file you\u2019re copying TO and use the Import tab there.');
     }
 
     setStatus('im-status', 'Checking comments already in this file…');
@@ -822,8 +822,8 @@ async function runPreview() {
       ['Threads', c.roots],
       ['Replies', c.replies],
       c.skipped ? ['Skipped: resolved threads and their replies', c.skipped] : ['Resolved threads (noted in text)', c.resolved],
-      ['Already migrated (will skip)', c.done],
-      c.unrecognized ? ['Migrated earlier, not recognized', c.unrecognized] : null,
+      ['Already copied (will skip)', c.done],
+      c.unrecognized ? ['Copied earlier, not recognized', c.unrecognized] : null,
       ['Pins that could not be matched', c.unmatched],
       ['Comments to post now', c.toPost]
     ]);
@@ -835,14 +835,14 @@ async function runPreview() {
         body: 'Every thread is resolved, and resolved threads are being skipped.' });
     } else if (c.toPost === 0) {
       setStatus('im-status', { kind: 'success', title: 'Already up to date',
-        body: 'Every comment has already been migrated to this file.' });
+        body: 'Every comment has already been copied to this file.' });
     } else if (c.unrecognized) {
       setStatus('im-status', { kind: 'warning', title: 'Check before posting',
         body: (c.unrecognized === 1
-          ? 'This file has 1 migrated comment that doesn\u2019t match this export file. If it came from the same original file, ' +
+          ? 'This file has 1 copied comment that doesn\u2019t match this export file. If it came from the same original file, ' +
             'posting now would duplicate it. That happens when the export file is newer than the one used before, ' +
             'or when Figma changed its text. Post only if it came from a different file.'
-          : 'This file has ' + c.unrecognized + ' migrated comments that don\u2019t match this export file. If they came from ' +
+          : 'This file has ' + c.unrecognized + ' copied comments that don\u2019t match this export file. If they came from ' +
             'the same original file, posting now would duplicate them. That happens when the export file is newer than ' +
             'the one used before, or when Figma changed their text. Post only if they came from a different file.'),
         note: timing + (c.unmatched ? '\n\n' + UNMATCHED_NOTE : '') });
@@ -952,7 +952,7 @@ async function runImport() {
       setStatus('im-status', { kind: 'error', title: 'Don\u2019t run Import again on this file',
         body: 'Figma saved ' + altered.length + (altered.length === 1 ? ' comment' : ' comments') + ' with different text ' +
           'from what the plugin sent, so the plugin can\u2019t recognize ' + (altered.length === 1 ? 'it' : 'them') +
-          ' as migrated. Running Import again would post ' + (altered.length === 1 ? 'it' : 'them') + ' a second time.',
+          ' as copied. Running Import again would post ' + (altered.length === 1 ? 'it' : 'them') + ' a second time.',
         note: 'The comments are in the file; check that they read correctly. Examples of the change are in the plugin\u2019s developer console.' });
     } else {
       setStatus('im-status', ok
@@ -961,7 +961,7 @@ async function runImport() {
             note: plan.counts.skipped ? 'Resolved threads were skipped.' : '' }
         : { kind: 'warning', title: 'Finished with problems',
             body: 'Some comments didn\u2019t make it into this file. This is usually a brief network or Figma hiccup. ' +
-              'Click Preview, then Post comments again; comments already migrated are skipped.',
+              'Click Preview, then Post comments again; comments already copied are skipped.',
             note: check.misplaced.length ? 'Some replies ended up under the wrong thread. A re-run won\u2019t move them, ' +
               'so check those threads by hand.' : '' });
     }

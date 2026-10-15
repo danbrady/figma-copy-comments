@@ -243,7 +243,7 @@ test('checkOpenFile tells a wrong file apart from frames deleted over time', () 
   assert.deepEqual(plain(L.checkOpenFile([pin('1', null)], {})), { wrongFile: false, threadsWithoutFrame: 0 });
 });
 
-test('buildPlan counts migrated comments that match nothing in the export', () => {
+test('buildPlan counts copied comments that match nothing in the export', () => {
   const data = sampleExport();
   const plan = L.buildPlan(data, [], { '1:2': '1:2' });
   const existing = [

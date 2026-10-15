@@ -1,11 +1,11 @@
 # Copy Comments
 
-A Figma plugin that migrates comments from one Figma file to another, for example from a commercial Figma org to its copy in **Figma for Government**.
+A Figma plugin that copies comments from one Figma file to another, for example from a commercial Figma org to its copy in **Figma for Government**.
 
 Figma's official migration path to Figma for Government is to save each file as `.fig` and import it. That path **doesn't carry over comments** ([Figma for Government](https://help.figma.com/hc/en-us/articles/22932461365015-Figma-for-Government)). This plugin fills that gap.
 
-## What gets migrated
-Every thread and reply is re-posted in the file you're migrating TO, in its original order. Each starts with a label, then the original text, then its details:
+## What gets copied
+Every thread and reply is re-posted in the file you're copying TO, in its original order. Each starts with a label, then the original text, then its details:
 
 ```
 [Copied comment]
@@ -18,55 +18,55 @@ Reactions: :+1: ×3 (A. Lee, B. Ortiz, C. Kim)
 
 Open threads have no `Resolved` line, and replies start with `[Copied reply]`. Times are Eastern.
 
-- **Position:** the comment is pinned to the same frame and offset, or to the same canvas spot or region. If a frame can't be found in the file you're migrating TO, the comment goes near its old position and a `Location:` line says where it used to be.
+- **Position:** the comment is pinned to the same frame and offset, or to the same canvas spot or region. If a frame can't be found in the file you're copying TO, the comment goes near its old position and a `Location:` line says where it used to be.
 - **Who and when:** Figma's API always posts as the person running the import, at the current time ([POST comments](https://developers.figma.com/docs/rest-api/comments-endpoints/)). The original author and time are in the text, and the raw data is in the exported `.json` file.
-- **Not migrated:**
-  - the resolved state itself: Figma's API can't resolve comments, so every migrated thread shows as open, and a resolved one says `✅ Resolved` and when in its text. To leave resolved threads out entirely, tick **Skip resolved threads** before Preview.
+- **Not copied:**
+  - the resolved state itself: Figma's API can't resolve comments, so every copied thread shows as open, and a resolved one says `✅ Resolved` and when in its text. To leave resolved threads out entirely, tick **Skip resolved threads** before Preview.
   - who resolved a thread (the API doesn't provide it)
   - images or attachments in comments
   - live @mentions (they become plain text)
-- **Safe to re-run:** the plugin recognizes comments it already migrated by their author, time, and text (ignoring any `Location:` line), and skips them. Identical comments, such as two "+1" replies from the same person in the same minute, are counted separately. Two people can work on the same file, or you can retry after an error, without creating duplicates. Editing a migrated comment's text by hand makes it unrecognizable, so a re-run would post it again. Preview warns when the file has migrated comments that don't match the export file. Use one export file per original file for the whole migration: a newer export, taken after reactions or resolved states changed, won't match comments posted from the older one.
+- **Safe to re-run:** the plugin recognizes comments it already copied by their author, time, and text (ignoring any `Location:` line), and skips them. Identical comments, such as two "+1" replies from the same person in the same minute, are counted separately. Two people can work on the same file, or you can retry after an error, without creating duplicates. Editing a copied comment's text by hand makes it unrecognizable, so a re-run would post it again. Preview warns when the file has copied comments that don't match the export file. Export each original file once and reuse that export file for every Import: a newer export, taken after reactions or resolved states changed, won't match comments posted from the older one.
 
 ---
 
 ## For everyone: moving one file
 
-This works in the **browser or the desktop app**. You need two personal access tokens: one made in the Figma environment you're migrating FROM and one made in the environment you're migrating TO. To make one, open Home › [Your Name] › Settings › Security › Personal access tokens ([how-to](https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens)).
+This works in the **browser or the desktop app**. You need two personal access tokens: one made in the Figma environment you're copying FROM and one made in the environment you're copying TO. To make one, open Home › [Your Name] › Settings › Security › Personal access tokens ([how-to](https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens)).
 
-The first time you open the plugin, a setup screen explains the tokens and how to make them. Migrating between two environments needs two tokens, one made in each. Name each token something like "Copy Comments", and set its expiration to 1 day; that's enough for a one-time migration. To see it again later, click **Token setup guide** next to either token field's label.
+The first time you open the plugin, a setup screen explains the tokens and how to make them. Copying between two environments needs two tokens, one made in each. Name each token something like "Copy Comments", and set its expiration to 1 day; that's enough for a one-time copy. To see it again later, click **Token setup guide** next to either token field's label.
 
 | Token | Make it in | Scopes |
 |---|---|---|
-| Export | the environment you're migrating FROM | `file_comments:read` |
-| Import | the environment you're migrating TO | `file_comments:read` **and** `file_comments:write` |
+| Export | the environment you're copying FROM | `file_comments:read` |
+| Import | the environment you're copying TO | `file_comments:read` **and** `file_comments:write` |
 
-Leave every other scope off. Import uses read to preview, skip comments that were already migrated, and check the result, and write to post. You need to be able to open both files and comment on the file you're migrating TO. Migrated comments are posted under the name of whoever runs Import.
+Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result, and write to post. You need to be able to open both files and comment on the file you're copying TO. Copied comments are posted under the name of whoever runs Import.
 
-Whoever runs Import should have a **Full or Dev seat** in the environment you're migrating TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes.
+Whoever runs Import should have a **Full or Dev seat** in the environment you're copying TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes.
 
-### 1. Export (in the file you're migrating FROM)
-1. Open the file you're migrating FROM and choose **Plugins › Copy Comments**. It opens on the **Export** tab.
+### 1. Export (in the file you're copying FROM)
+1. Open the file you're copying FROM and choose **Plugins › Copy Comments**. It opens on the **Export** tab.
 2. Paste the file's link and your **Export** token.
 3. Click **Export comments**. A `<file name> - comments.json` file downloads. Keep it.
 
 ### 2. Move the file
-In the file you're migrating FROM, choose **File › Save local copy…**. Then import the `.fig` into the environment you're migrating TO. If an admin or Figma is moving your files for you, skip this step.
+In the file you're copying FROM, choose **File › Save local copy…**. Then import the `.fig` into the environment you're copying TO. If an admin or Figma is moving your files for you, skip this step.
 
-### 3. Import (in the file you're migrating TO)
-1. Open the file you're migrating TO, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
+### 3. Import (in the file you're copying TO)
+1. Open the file you're copying TO, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
 2. Paste that file's link and your **Import** token.
 3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
 4. Click **Post comments** and keep the window open until it says **Import complete**. The plugin then checks the file and reports anything missing.
 
-If something fails, run **Preview** then **Post comments** again. Comments that were already migrated are skipped.
+If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped.
 
 If the plugin says **Don't run Import again on this file**, don't. Figma saved some comments with different text from what the plugin sent, so a re-run can't recognize them and would post them twice. Examples of the change are in the developer console (**Plugins › Development › Show/Hide console**).
 
 **Tokens:** "Remember on this device" stores a token only in this browser or app, through Figma's plugin storage. Untick it on shared computers. Tokens are only ever sent to `api.figma.com` or `api.figma-gov.com`; the manifest blocks every other domain.
 
-**The exported file:** the `.json` holds every comment's text, the authors' Figma handles, and the names of the frames comments are pinned to. Treat it like the design file: keep it out of public channels, and delete it once the migration is checked.
+**The exported file:** the `.json` holds every comment's text, the authors' Figma handles, and the names of the frames comments are pinned to. Treat it like the design file: keep it out of public channels, and delete it once the copied comments are checked.
 
-**Notifications:** posting hundreds of comments may notify people who follow the file you're migrating TO. Tell them before you run Import.
+**Notifications:** posting hundreds of comments may notify people who follow the file you're copying TO. Tell them before you run Import.
 
 ---
 
