@@ -1,4 +1,4 @@
-# Migrate Comments
+# Copy Comments
 
 A Figma plugin that migrates comments from one Figma file to another, for example from a commercial Figma org to its copy in **Figma for Government**.
 
@@ -8,7 +8,7 @@ Figma's official migration path to Figma for Government is to save each file as 
 Every thread and reply is re-posted in the file you're migrating TO, in its original order. Each starts with a label, then the original text, then its details:
 
 ```
-[Migrated comment]
+[Copied comment]
 Original comment text
 ———
 alex.rivera · Oct 1, 2026, 9:52 AM ET
@@ -16,7 +16,7 @@ alex.rivera · Oct 1, 2026, 9:52 AM ET
 Reactions: :+1: ×3 (A. Lee, B. Ortiz, C. Kim)
 ```
 
-Open threads have no `Resolved` line, and replies start with `[Migrated reply]`. Times are Eastern.
+Open threads have no `Resolved` line, and replies start with `[Copied reply]`. Times are Eastern.
 
 - **Position:** the comment is pinned to the same frame and offset, or to the same canvas spot or region. If a frame can't be found in the file you're migrating TO, the comment goes near its old position and a `Location:` line says where it used to be.
 - **Who and when:** Figma's API always posts as the person running the import, at the current time ([POST comments](https://developers.figma.com/docs/rest-api/comments-endpoints/)). The original author and time are in the text, and the raw data is in the exported `.json` file.
@@ -33,7 +33,7 @@ Open threads have no `Resolved` line, and replies start with `[Migrated reply]`.
 
 This works in the **browser or the desktop app**. You need two personal access tokens: one made in the Figma environment you're migrating FROM and one made in the environment you're migrating TO. To make one, open Home › [Your Name] › Settings › Security › Personal access tokens ([how-to](https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens)).
 
-The first time you open the plugin, a setup screen explains the tokens and how to make them. Migrating between two environments needs two tokens, one made in each. Name each token something like "Migrate Comments", and set its expiration to 1 day; that's enough for a one-time migration. To see it again later, click **Token setup guide** under either token field.
+The first time you open the plugin, a setup screen explains the tokens and how to make them. Migrating between two environments needs two tokens, one made in each. Name each token something like "Copy Comments", and set its expiration to 1 day; that's enough for a one-time migration. To see it again later, click **Token setup guide** next to either token field's label.
 
 | Token | Make it in | Scopes |
 |---|---|---|
@@ -45,7 +45,7 @@ Leave every other scope off. Import uses read to preview, skip comments that wer
 Whoever runs Import should have a **Full or Dev seat** in the environment you're migrating TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes.
 
 ### 1. Export (in the file you're migrating FROM)
-1. Open the file you're migrating FROM and choose **Plugins › Migrate Comments**. It opens on the **Export** tab.
+1. Open the file you're migrating FROM and choose **Plugins › Copy Comments**. It opens on the **Export** tab.
 2. Paste the file's link and your **Export** token.
 3. Click **Export comments**. A `<file name> - comments.json` file downloads. Keep it.
 
@@ -53,7 +53,7 @@ Whoever runs Import should have a **Full or Dev seat** in the environment you're
 In the file you're migrating FROM, choose **File › Save local copy…**. Then import the `.fig` into the environment you're migrating TO. If an admin or Figma is moving your files for you, skip this step.
 
 ### 3. Import (in the file you're migrating TO)
-1. Open the file you're migrating TO, choose **Plugins › Migrate Comments**, and switch to the **Import** tab.
+1. Open the file you're migrating TO, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
 2. Paste that file's link and your **Import** token.
 3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
 4. Click **Post comments** and keep the window open until it says **Import complete**. The plugin then checks the file and reports anything missing.
@@ -71,7 +71,7 @@ If the plugin says **Don't run Import again on this file**, don't. Figma saved s
 ---
 
 ## For admins
-- **Figma for Government** can only use third-party plugins that an admin has approved, and private org plugins can't be published there ([Figma for Government](https://help.figma.com/hc/en-us/articles/22932461365015-Figma-for-Government)). Approve Migrate Comments from its Community page: **Admin › Resources › Plugins › Add plugin**, then paste the Community link ([Manage plugins](https://help.figma.com/hc/en-us/articles/4404228724759-Manage-plugins-and-widgets-in-an-organization)).
+- **Figma for Government** can only use third-party plugins that an admin has approved, and private org plugins can't be published there ([Figma for Government](https://help.figma.com/hc/en-us/articles/22932461365015-Figma-for-Government)). Approve Copy Comments from its Community page: **Admin › Resources › Plugins › Add plugin**, then paste the Community link ([Manage plugins](https://help.figma.com/hc/en-us/articles/4404228724759-Manage-plugins-and-widgets-in-an-organization)).
 - **Commercial org:** approve it the same way if plugin approval is turned on.
 - **Network:** allow `figma-gov.com` (and `api.figma-gov.com`) on port 443.
 

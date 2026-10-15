@@ -122,7 +122,7 @@
   <h3>To make a token</h3>
   <ol>
     <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
-    <li>Name it "Migrate Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time migration</li>
+    <li>Name it "Copy Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time migration</li>
     <li>Turn on only these permission scopes:
       <div class="token-cards">
         <div class="token-card">
@@ -259,7 +259,7 @@ function formatReactions(reactions) {
 }
 
 var DIVIDER = '———';
-var MARKERS = { '[Migrated comment]': true, '[Migrated reply]': true };
+var MARKERS = { '[Copied comment]': true, '[Copied reply]': true };
 
 // A label, the original text, a rule, then the details: author and time,
 // resolved time, reactions, and (last, when the pin didn't match) the old location.
@@ -272,13 +272,13 @@ function buildMessage(c, marker, extra) {
 }
 
 function buildRootMessage(c, location) {
-  var lines = buildMessage(c, '[Migrated comment]', c.resolved_at ? ['✅ Resolved ' + formatTime(c.resolved_at)] : []);
+  var lines = buildMessage(c, '[Copied comment]', c.resolved_at ? ['✅ Resolved ' + formatTime(c.resolved_at)] : []);
   if (location) lines.push('Location: ' + location + ' (original pin could not be matched)');
   return lines.join('\n');
 }
 
 function buildReplyMessage(c) {
-  return buildMessage(c, '[Migrated reply]', []).join('\n');
+  return buildMessage(c, '[Copied reply]', []).join('\n');
 }
 
 // Identifies a migrated comment by everything the plugin wrote into it except the
@@ -784,7 +784,7 @@ async function runPreview() {
     if (!file) throw new Error('Choose the .json file that Export downloaded.');
     importData = await readJsonFile(file);
     if (importData.format !== FORMAT || !Array.isArray(importData.comments)) {
-      throw new Error('That file was not exported by Migrate Comments.');
+      throw new Error('That file was not exported by Copy Comments.');
     }
     if (importData.source.apiHost === input.link.apiHost && importData.source.fileKey === input.link.key) {
       throw new Error('This is the same file the comments were exported from. Open the file you\u2019re migrating TO and use the Import tab there.');
