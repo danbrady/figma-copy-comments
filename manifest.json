@@ -1,0 +1,12 @@
+{
+  "name": "Migrate Comments",
+  "id": "1692205478932725098",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["https://api.figma.com", "https://api.figma-gov.com"]
+  }
+}
