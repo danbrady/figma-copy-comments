@@ -1,12 +1,12 @@
-// Runs code.js (the plugin's main thread) against a small fake of the Figma Plugin API.
-// Usage: node --test test/main.test.js
+// Runs the built main thread (dist/code.js, from src/code.ts) against a small fake of the
+// Figma Plugin API. Usage: npm test
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'code.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'dist', 'code.js'), 'utf8');
 // Objects made inside the VM aren't deepEqual to outside ones, so compare plain copies.
 const plain = (v) => JSON.parse(JSON.stringify(v));
 

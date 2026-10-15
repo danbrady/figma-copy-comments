@@ -1,0 +1,19 @@
+// UI iframe (src/ui.ts and the logic it imports). Browser APIs, and deliberately
+// no Figma typings: the UI can't reach `figma`, only send messages to the main thread.
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["es2017", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": []
+  },
+  "include": ["src/ui.ts", "src/logic.ts"]
+}
