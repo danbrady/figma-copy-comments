@@ -372,6 +372,19 @@ test('formatWait picks a readable unit', () => {
   assert.equal(L.formatWait(3 * 86400), '3 days');
 });
 
+test('groupCopied finds copied comments by poster, threads first, including old labels', () => {
+  const groups = plain(L.groupCopied([
+    { id: 'a', user: { id: 'u1', handle: 'alex' }, message: '[Copied comment]\nx\n———\nA · Jan 1, 2026, 7:00:00 AM ET' },
+    { id: 'b', parent_id: 'a', user: { id: 'u1', handle: 'alex' }, message: '[Copied reply]\ny\n———\nB · Jan 1, 2026, 7:01:00 AM ET' },
+    { id: 'c', user: { id: 'u1', handle: 'alex' }, message: '[Migrated comment]\nold\n———\nC · Jan 1, 2026, 7:02 AM ET' },
+    { id: 'd', user: { id: 'u2', handle: 'jane' }, message: '[Copied comment]\nz\n———\nD · Jan 1, 2026, 7:03:00 AM ET' },
+    { id: 'e', user: { id: 'u1', handle: 'alex' }, message: 'An ordinary comment that mentions [Copied comment]' },
+    { id: 'f', user: { id: 'u3', handle: 'sam' }, message: 'ordinary' }
+  ]));
+  assert.deepEqual(groups.map((g) => [g.handle, g.comments.map((c) => c.id)]), [['alex', ['a', 'c', 'b']], ['jane', ['d']]]);
+  assert.deepEqual(plain(L.groupCopied([])), []);
+});
+
 test('safeFileName strips path characters', () => {
   assert.equal(L.safeFileName('Design: Forms / v2'), 'Design- Forms - v2 - comments.json');
   assert.equal(L.safeFileName(''), 'figma-file - comments.json');

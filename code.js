@@ -1,6 +1,6 @@
 // Copy Comments — main thread.
 // The Plugin API has no comments API, so all REST calls happen in ui.html.
-// This side only does what needs the document: node lookups, version history, token storage,
+// This side only does what needs the document: node lookups, token storage,
 // and remembering whether the welcome screen was dismissed.
 
 var WELCOME_KEY = 'welcome:hidden';
@@ -54,10 +54,6 @@ async function handleMessage(msg) {
       // A measured height fits the window to the content; null restores the default.
       var height = Number(msg.height);
       figma.ui.resize(WIDTH, height > 0 ? Math.min(Math.max(Math.ceil(height), 240), 800) : HEIGHT);
-    } else if (msg.type === 'save-version') {
-      // A named point in the file's version history, saved before Import posts anything.
-      var version = await figma.saveVersionHistoryAsync(String(msg.title || ''), String(msg.description || ''));
-      reply(msg.requestId, { id: version.id });
     } else if (msg.type === 'locate') {
       if (!Array.isArray(msg.ids)) throw new Error('locate needs an array of ids');
       reply(msg.requestId, await locateNodes(msg.ids));
