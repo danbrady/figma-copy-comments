@@ -1,19 +1,17 @@
-// Runs the pure functions from ui.html (between BEGIN LOGIC / END LOGIC) in a VM.
-// Usage: node --test test/logic.test.js
+// Tests the pure functions in src/logic.ts, built to dist/test/logic.cjs by `npm test`.
+// Usage: npm test
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
-const logic = html.slice(html.indexOf('// BEGIN LOGIC'), html.indexOf('// END LOGIC'));
-const L = vm.createContext({ Intl, Date, Object, String, Array });
-vm.runInContext(logic, L);
+const L = require('../dist/test/logic.cjs');
+const html = fs.readFileSync(path.join(__dirname, '..', 'dist', 'ui.html'), 'utf8');
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
-test('the whole ui.html script parses, not just the logic block', () => {
+test('the built ui.html has one inlined script, and it parses', () => {
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
   assert.equal(scripts.length, 1);
   assert.doesNotThrow(() => new vm.Script(scripts[0], { filename: 'ui.html' }));

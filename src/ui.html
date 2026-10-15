@@ -1,0 +1,235 @@
+<style>
+  :root {
+    --bg: var(--figma-color-bg, #ffffff);
+    --bg-2: var(--figma-color-bg-secondary, #f5f5f5);
+    --text: var(--figma-color-text, #1e1e1e);
+    --text-2: var(--figma-color-text-secondary, #6b6b6b);
+    --border: var(--figma-color-border, #e2e2e2);
+    --brand: var(--figma-color-bg-brand, #0d99ff);
+    --brand-text: var(--figma-color-text-brand, #007be5);
+    --selected: var(--figma-color-bg-selected, #e5f4ff);
+    --hover: var(--figma-color-bg-hover, #f5f5f5);
+    --on-brand: var(--figma-color-text-onbrand, #ffffff);
+    --danger: var(--figma-color-text-danger, #dc3412);
+    --success: var(--figma-color-text-success, #14ae5c);
+    --warning: var(--figma-color-text-warning, #b86200);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font: 12px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  p { margin: 0 0 8px; }
+  .muted { color: var(--text-2); }
+  .tabs { display: flex; margin: 0 0 16px; border-bottom: 1px solid var(--border); }
+  .tab {
+    flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0;
+    padding: 10px 12px 9px; color: var(--text-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .tab:hover { background: var(--hover); color: var(--text); }
+  .tab:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+  .tab[aria-selected="true"] { background: var(--selected); color: var(--brand-text); border-bottom-color: var(--brand); }
+  .step { margin-bottom: 14px; }
+  .step label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .step .hint { color: var(--text-2); font-size: 11px; margin-top: 4px; }
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  input[type="file"] { font: inherit; color: var(--text); }
+  /* .step .check outranks .step label, which would otherwise make these display: block. */
+  .step .check { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; cursor: pointer; }
+  .step .check input { flex: none; width: 14px; height: 14px; margin: 0; cursor: pointer; }
+  a { color: var(--brand); }
+  button.primary {
+    width: 100%; padding: 9px; border: 0; border-radius: 6px;
+    background: var(--brand); color: var(--on-brand); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.secondary {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  section button + button { margin-top: 8px; }
+  button.danger {
+    width: 100%; padding: 9px; border: 0; border-radius: 6px;
+    background: var(--danger); color: var(--on-brand); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  /* Undoing an import sits apart from the import steps. */
+  .remove { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .remove-confirm { margin-top: 12px; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  /* Alerts: an icon, an optional title, the message, and an optional note. Tints are mixed
+     from the status color and the panel background, so they follow Figma's light and dark themes. */
+  .status {
+    --tone: var(--text-2);
+    display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: var(--bg-2); border: 1px solid transparent;
+  }
+  .status:empty { display: none; }
+  .status.success { --tone: var(--success); }
+  .status.warning { --tone: var(--warning); }
+  .status.error { --tone: var(--danger); }
+  .status.info { --tone: var(--brand); }
+  .status.success, .status.warning, .status.error, .status.info {
+    background: color-mix(in srgb, var(--tone) 9%, var(--bg));
+    border-color: color-mix(in srgb, var(--tone) 35%, var(--bg));
+  }
+  .status-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--tone); }
+  .status-icon svg { display: block; width: 16px; height: 16px; }
+  .status.progress .status-icon { color: var(--brand); }
+  .status.progress .status-icon svg { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .status.progress .status-icon svg { animation: none; }
+    .bar > div { transition: none; }
+  }
+  .status-text { min-width: 0; }
+  .status-title { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .status-body { white-space: pre-wrap; }
+  .status-note {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--tone) 25%, var(--bg));
+    color: var(--text-2); font-size: 11px; white-space: pre-wrap;
+  }
+  .summary { margin-top: 12px; border-collapse: collapse; width: 100%; }
+  .summary td { padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .summary td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--bg-2); border-radius: 3px; overflow: hidden; margin-top: 12px; }
+  .bar > div { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
+  /* Label on the left, guide link on the right, sharing one baseline. */
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .step .label-row label { margin-bottom: 0; }
+  .token-guide { font-size: 11px; }
+  button.link {
+    background: none; border: 0; padding: 0; color: var(--brand-text); font: inherit; text-decoration: underline; cursor: pointer;
+  }
+  .welcome h2 { font-size: 13px; margin: 0 0 8px; }
+  .welcome h3 { font-size: 12px; margin: 14px 0 6px; }
+  .welcome ol { margin: 0 0 8px; padding-left: 18px; }
+  .welcome-check { margin: 10px 0 0; }
+  .welcome-check .check { justify-content: center; font-weight: 400; color: var(--text-2); }
+  .welcome li { margin-bottom: 2px; }
+  .token-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 8px; }
+  /* Inside step 3, span the list's indent too, so each card has room for one-line text. */
+  .welcome li .token-cards { margin-left: -18px; }
+  .token-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg-2); }
+  .token-card strong { display: block; font-size: 13px; margin-bottom: 4px; }
+  .token-card p { margin: 0 0 8px; }
+  .token-card .scopes-label {
+    display: block; margin-bottom: 3px; color: var(--text-2); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .token-card code { font-size: 10.5px; padding: 0 3px; border-radius: 3px; background: var(--bg); }
+  [hidden] { display: none !important; }
+</style>
+
+
+<!-- WELCOME: shown on first run, until dismissed with "Don't show this again" -->
+<section class="welcome" id="panel-welcome" hidden>
+  <h2>Before you start, make a personal access token in each Figma environment</h2>
+  <p class="muted">Copying between two environments, such as commercial Figma and Figma for Government, needs two tokens.</p>
+  <h3>To make a token</h3>
+  <ol>
+    <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
+    <li>Name it "Copy Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time copy</li>
+    <li>Turn on only these permission scopes:
+      <div class="token-cards">
+        <div class="token-card">
+          <strong>Export token</strong>
+          <p>Where you're copying FROM</p>
+          <span class="scopes-label">Permission scopes</span>
+          <code>file_comments:read</code>
+        </div>
+        <div class="token-card">
+          <strong>Import token</strong>
+          <p>Where you're copying TO</p>
+          <span class="scopes-label">Permission scopes</span>
+          <code>file_comments:read</code> + <code>file_comments:write</code>
+        </div>
+      </div>
+    </li>
+    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the Export or Import tab.</li>
+  </ol>
+  <p class="muted">Treat tokens like passwords.
+    <a href="https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens" target="_blank">Figma's token guide</a></p>
+  <button class="primary" id="welcome-continue">I've made my tokens, continue</button>
+  <div class="step welcome-check">
+    <label class="check"><input type="checkbox" id="welcome-hide" checked> Don't show this again</label>
+  </div>
+</section>
+
+<div class="tabs" role="tablist" id="tabs" hidden>
+  <button class="tab" role="tab" id="tab-export" aria-selected="true" aria-controls="panel-export" tabindex="0">Export</button>
+  <button class="tab" role="tab" id="tab-import" aria-selected="false" aria-controls="panel-import" tabindex="-1">Import</button>
+</div>
+
+<!-- EXPORT -->
+<section id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
+  <p class="muted">Run this in the file you're copying <strong>FROM</strong>.</p>
+  <div class="step">
+    <label for="ex-link">Link to this file</label>
+    <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off" aria-describedby="ex-link-hint">
+    <div class="hint" id="ex-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
+  </div>
+  <div class="step">
+    <div class="label-row">
+      <label for="ex-token">Personal access token</label>
+      <button class="link token-guide" type="button">Token setup guide</button>
+    </div>
+    <input type="password" id="ex-token" placeholder="figd_…" autocomplete="off">
+    <label class="check"><input type="checkbox" id="ex-remember" checked> Remember on this device</label>
+  </div>
+  <button class="primary" id="ex-run">Export comments</button>
+  <button class="secondary" id="ex-again" hidden>Download again</button>
+  <div class="status" id="ex-status" role="status" aria-live="polite"></div>
+  <table class="summary" id="ex-summary" hidden></table>
+</section>
+
+<!-- IMPORT -->
+<section id="panel-import" role="tabpanel" aria-labelledby="tab-import" hidden>
+  <p class="muted">Run this in the file you're copying <strong>TO</strong>.</p>
+  <div class="step">
+    <label for="im-link">Link to this file</label>
+    <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off" aria-describedby="im-link-hint">
+    <div class="hint" id="im-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
+  </div>
+  <div class="step">
+    <div class="label-row">
+      <label for="im-token">Personal access token</label>
+      <button class="link token-guide" type="button">Token setup guide</button>
+    </div>
+    <input type="password" id="im-token" placeholder="figd_…" autocomplete="off">
+    <label class="check"><input type="checkbox" id="im-remember" checked> Remember on this device</label>
+  </div>
+  <div class="step">
+    <label for="im-file">Exported comments file (.json)</label>
+    <input type="file" id="im-file" accept=".json,application/json">
+  </div>
+  <div class="step">
+    <label class="check"><input type="checkbox" id="im-skip-resolved" aria-describedby="im-skip-resolved-hint"> Skip resolved threads</label>
+    <div class="hint" id="im-skip-resolved-hint">Leaves out resolved threads and their replies. Figma's API can't resolve comments,
+      so copied threads always show as open. A thread that was resolved says
+      <strong>✅ Resolved</strong> and when in its text.</div>
+  </div>
+  <div class="step">
+    <label class="check"><input type="checkbox" id="im-skip-deleted" aria-describedby="im-skip-deleted-hint"> Skip threads whose frame was deleted</label>
+    <div class="hint" id="im-skip-deleted-hint">Leaves out threads pinned to frames that were already deleted when the comments were
+      exported, and their replies. Otherwise they're placed near the top-left of the canvas.</div>
+  </div>
+  <button class="secondary" id="im-preview">Preview</button>
+  <button class="primary" id="im-run" hidden>Post comments</button>
+  <div class="bar" id="im-bar" role="progressbar" aria-label="Posting comments" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><div></div></div>
+  <div class="status" id="im-status" role="status" aria-live="polite"></div>
+  <table class="summary" id="im-summary" hidden></table>
+  <div class="remove">
+    <button class="link" type="button" id="im-remove-start">Remove copied comments from this file…</button>
+    <div class="remove-confirm" id="im-remove-confirm" hidden>
+      <button class="danger" type="button" id="im-remove-run">Remove comments</button>
+      <button class="secondary" type="button" id="im-remove-cancel">Cancel</button>
+    </div>
+  </div>
+</section>
+
+<!-- ui.ts is inlined here by scripts/build.mjs -->

@@ -95,24 +95,43 @@ Restoring an earlier version from the file's version history doesn't remove comm
 ## For the builder
 
 ### Files
+The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-typings`](https://github.com/figma/plugin-typings) for the Plugin API types and [`@figma/eslint-plugin-figma-plugins`](https://github.com/figma/eslint-plugin-figma-plugins) for linting. [esbuild](https://esbuild.github.io/) builds it into `dist/`, which is what Figma loads; `dist/` isn't committed.
+
 | File | Purpose |
 |---|---|
-| `manifest.json` | Plugin manifest. `networkAccess` allows only the two Figma API hosts |
-| `code.js` | Main thread: node lookups (`getNodeByIdAsync`) and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
-| `ui.html` | UI, plus the REST calls (`fetch` with `X-Figma-Token`). The block between `BEGIN LOGIC` and `END LOGIC` is pure, tested logic |
-| `test/logic.test.js` | Unit tests for that logic, plus a check that the whole `ui.html` script parses |
-| `test/main.test.js` | Tests for `code.js`, run against a small fake of the Figma Plugin API |
-| `package.json` | `npm test` runs both test files. No dependencies |
-| `.github/workflows/test.yml` | Runs `npm test` on Node 20, 22, and 24 for every push and pull request |
-| `.gitignore` | Keeps exported comment files (`*comments*.json`) out of the repo, since they hold real comment text |
+| `manifest.json` | Plugin manifest. Points at `dist/code.js` and `dist/ui.html`; `networkAccess` allows only the two Figma API hosts |
+| `src/code.ts` | Main thread: node lookups (`getNodeByIdAsync`) and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
+| `src/ui.ts` | UI: the REST calls (`fetch` with `X-Figma-Token`), Export, Preview, Post, and Remove |
+| `src/logic.ts` | Pure, tested logic: message format, matching copies, planning and checking an import |
+| `src/types.ts`, `src/messages.ts` | Shared types: Figma comment data, and the messages between the UI and the main thread |
+| `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
+| `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
+| `tsconfig.json`, `tsconfig.ui.json` | Type checking for the main thread (Figma typings, no DOM) and the UI (DOM, no `figma` global) |
+| `eslint.config.mjs` | Figma's recommended ESLint config |
+| `test/logic.test.js` | Unit tests for `src/logic.ts`, plus a check that the built `dist/ui.html` script parses |
+| `test/main.test.js` | Tests for the built `dist/code.js`, run against a small fake of the Figma Plugin API |
+| `.vscode/tasks.json` | **Cmd+Shift+B** (Ctrl+Shift+B on Windows) starts `npm run watch` |
+| `.github/workflows/test.yml` | Runs typecheck, lint, and tests on Node 20, 22, and 24 for every push and pull request |
+| `.gitignore` | Keeps `dist/`, `node_modules/`, and exported comment files (`*comments*.json`) out of the repo |
 | `.editorconfig` | Two-space indents, LF line endings |
 
-No build step and nothing to install: this is plain JavaScript, not TypeScript. Run the tests with `npm test` (Node 20 or later).
+| Command | What it does |
+|---|---|
+| `npm install` | Installs TypeScript, the Figma typings and linter, and esbuild (Node 20 or later) |
+| `npm run build` | Builds `dist/` once |
+| `npm run watch` | Rebuilds `dist/` on every save; same as **Cmd+Shift+B** in VS Code |
+| `npm run typecheck` | Checks types for the main thread and the UI |
+| `npm run lint` | Runs Figma's ESLint rules on `src/` |
+| `npm test` | Builds, then runs the tests |
+| `npm run check` | All three checks: typecheck, lint, and tests |
 
 ### 1. Load the plugin
 Development plugins only work in the **desktop app** ([docs](https://help.figma.com/hc/en-us/articles/360039958874-Make-plugins-for-the-Figma-Community)). The plugin ID is already in `manifest.json`; keep it, because Community publishing and admin approvals are tied to it.
 
-Choose **Plugins › Development › Import plugin from manifest…** and select this folder's `manifest.json`.
+1. In this folder, run `npm install`, then `npm run build`. While you're changing code, run `npm run watch` (or press **Cmd+Shift+B** in VS Code) instead, so `dist/` stays current.
+2. In Figma, choose **Plugins › Development › Import plugin from manifest…** and select this folder's `manifest.json`.
+
+If Figma says it can't find `dist/code.js` or `dist/ui.html`, the build hasn't run yet.
 
 ### 2. Spike: confirm the unknowns before anything else
 - [ ] **Commercial:** run Export on a test file. Check that the `.json` downloads and the counts look right.
@@ -142,4 +161,4 @@ Export it, save a local copy, import it to Gov, then run Import. Use a fresh cop
 3. Repeat the pilot's Import step **in a browser** with the published version.
 
 ### Fallback: the plugin can't reach `api.figma-gov.com`
-Keep using the plugin for **Export**. For **Import**, one technical person posts the comments from the `.json` with a script against `https://api.figma-gov.com`, reusing `buildPlan` and the message format from `ui.html`, and removes them the same way if an import needs undoing (`groupCopied` finds them). Everyone else only does Export.
+Keep using the plugin for **Export**. For **Import**, one technical person posts the comments from the `.json` with a script against `https://api.figma-gov.com`, reusing `buildPlan` and the message format from `src/logic.ts`, and removes them the same way if an import needs undoing (`groupCopied` finds them). Everyone else only does Export.

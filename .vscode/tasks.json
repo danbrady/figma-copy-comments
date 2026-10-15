@@ -1,0 +1,15 @@
+{
+  // Cmd+Shift+B (Ctrl+Shift+B on Windows) starts the watch build, as in Figma's
+  // "Build your first plugin" setup, which uses a watch task the same way.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: watch",
+      "type": "npm",
+      "script": "watch",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    }
+  ]
+}
