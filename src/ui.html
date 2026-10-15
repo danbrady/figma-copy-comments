@@ -93,9 +93,19 @@
     margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--tone) 25%, var(--bg));
     color: var(--text-2); font-size: 11px; white-space: pre-wrap;
   }
-  .summary { margin-top: 12px; border-collapse: collapse; width: 100%; }
-  .summary td { padding: 4px 0; border-bottom: 1px solid var(--border); }
-  .summary td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* A card like the token cards: border, 8px corners, the secondary background, 12px side padding.
+     Separate borders, so the corners can round; rows are divided by a top border instead. */
+  .summary {
+    margin-top: 12px; width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); overflow: hidden;
+  }
+  .summary td { padding: 7px 12px; vertical-align: top; }
+  .summary tr + tr td { border-top: 1px solid var(--border); }
+  /* Labels stay on one line; a long value, such as a file name, wraps instead. */
+  .summary td:first-child { color: var(--text-2); white-space: nowrap; padding-right: 16px; }
+  .summary td:last-child {
+    text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); overflow-wrap: anywhere;
+  }
   .bar { height: 6px; background: var(--bg-2); border-radius: 3px; overflow: hidden; margin-top: 12px; }
   .bar > div { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
   /* Label on the left, guide link on the right, sharing one baseline. */
