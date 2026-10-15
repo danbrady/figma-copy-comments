@@ -37,35 +37,37 @@ var WELCOME_HEIGHT = 505;
   });
 })();
 
+// Messages come from this plugin's own UI, but are still checked before use:
+// anything malformed is ignored or answered with an error, never acted on.
 async function handleMessage(msg) {
+  if (!msg || typeof msg !== 'object') return;
   try {
     if (msg.type === 'save-token') {
       var key = TOKEN_KEYS[msg.host];
       if (!key) return;
-      if (msg.token) await figma.clientStorage.setAsync(key, msg.token);
+      if (msg.token) await figma.clientStorage.setAsync(key, String(msg.token));
       else await figma.clientStorage.deleteAsync(key);
     } else if (msg.type === 'save-welcome') {
       if (msg.hide) await figma.clientStorage.setAsync(WELCOME_KEY, true);
       else await figma.clientStorage.deleteAsync(WELCOME_KEY);
     } else if (msg.type === 'resize') {
       // A measured height fits the window to the content; null restores the default.
-      figma.ui.resize(WIDTH, msg.height ? Math.min(Math.max(Math.ceil(msg.height), 240), 800) : HEIGHT);
+      var height = Number(msg.height);
+      figma.ui.resize(WIDTH, height > 0 ? Math.min(Math.max(Math.ceil(height), 240), 800) : HEIGHT);
     } else if (msg.type === 'save-version') {
       // A named point in the file's version history, saved before Import posts anything.
-      var version = await figma.saveVersionHistoryAsync(msg.title, msg.description);
+      var version = await figma.saveVersionHistoryAsync(String(msg.title || ''), String(msg.description || ''));
       reply(msg.requestId, { id: version.id });
     } else if (msg.type === 'locate') {
+      if (!Array.isArray(msg.ids)) throw new Error('locate needs an array of ids');
       reply(msg.requestId, await locateNodes(msg.ids));
     } else if (msg.type === 'resolve') {
+      if (!msg.locators || typeof msg.locators !== 'object') throw new Error('resolve needs a locators object');
       reply(msg.requestId, await resolveNodes(msg.locators));
-    } else if (msg.type === 'notify') {
-      figma.notify(msg.text, { error: !!msg.error });
-    } else if (msg.type === 'close') {
-      figma.closePlugin();
     }
   } catch (err) {
     if (msg.requestId) reply(msg.requestId, null, String(err && err.message || err));
-    else figma.notify('Copy Comments error: ' + err, { error: true });
+    else figma.notify('Copy Comments error: ' + (err && err.message || err), { error: true });
   }
 }
 

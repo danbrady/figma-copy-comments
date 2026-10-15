@@ -85,12 +85,16 @@ If the plugin says **Don't run Import again on this file**, don't. Figma changed
 | File | Purpose |
 |---|---|
 | `manifest.json` | Plugin manifest. `networkAccess` allows only the two Figma API hosts |
-| `code.js` | Main thread: node lookups (`getNodeByIdAsync`) and token storage (`clientStorage`). The Plugin API has no comments API |
+| `code.js` | Main thread: node lookups (`getNodeByIdAsync`), the version saved before Import (`saveVersionHistoryAsync`), and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
 | `ui.html` | UI, plus the REST calls (`fetch` with `X-Figma-Token`). The block between `BEGIN LOGIC` and `END LOGIC` is pure, tested logic |
-| `test/logic.test.js` | Unit tests for that logic: `node --test test/logic.test.js` |
+| `test/logic.test.js` | Unit tests for that logic, plus a check that the whole `ui.html` script parses |
+| `test/main.test.js` | Tests for `code.js`, run against a small fake of the Figma Plugin API |
+| `package.json` | `npm test` runs both test files. No dependencies |
+| `.github/workflows/test.yml` | Runs `npm test` on Node 20, 22, and 24 for every push and pull request |
 | `.gitignore` | Keeps exported comment files (`*comments*.json`) out of the repo, since they hold real comment text |
+| `.editorconfig` | Two-space indents, LF line endings |
 
-No build step: this is plain JavaScript, not TypeScript.
+No build step and nothing to install: this is plain JavaScript, not TypeScript. Run the tests with `npm test` (Node 20 or later).
 
 ### 1. Load the plugin
 Development plugins only work in the **desktop app** ([docs](https://help.figma.com/hc/en-us/articles/360039958874-Make-plugins-for-the-Figma-Community)). The plugin ID is already in `manifest.json`; keep it, because Community publishing and admin approvals are tied to it.

@@ -75,6 +75,10 @@
   .status.progress .status-icon { color: var(--brand); }
   .status.progress .status-icon svg { animation: spin 0.9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .status.progress .status-icon svg { animation: none; }
+    .bar > div { transition: none; }
+  }
   .status-text { min-width: 0; }
   .status-title { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
   .status-body { white-space: pre-wrap; }
@@ -150,17 +154,17 @@
 </section>
 
 <div class="tabs" role="tablist" id="tabs" hidden>
-  <button class="tab" role="tab" id="tab-export" aria-selected="true">Export</button>
-  <button class="tab" role="tab" id="tab-import" aria-selected="false">Import</button>
+  <button class="tab" role="tab" id="tab-export" aria-selected="true" aria-controls="panel-export" tabindex="0">Export</button>
+  <button class="tab" role="tab" id="tab-import" aria-selected="false" aria-controls="panel-import" tabindex="-1">Import</button>
 </div>
 
 <!-- EXPORT -->
-<section id="panel-export" hidden>
+<section id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
   <p class="muted">Run this in the file you're copying <strong>FROM</strong>.</p>
   <div class="step">
     <label for="ex-link">Link to this file</label>
-    <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off">
-    <div class="hint">Use Share › Copy link, or copy the address from your browser.</div>
+    <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off" aria-describedby="ex-link-hint">
+    <div class="hint" id="ex-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
   </div>
   <div class="step">
     <div class="label-row">
@@ -177,12 +181,12 @@
 </section>
 
 <!-- IMPORT -->
-<section id="panel-import" hidden>
+<section id="panel-import" role="tabpanel" aria-labelledby="tab-import" hidden>
   <p class="muted">Run this in the file you're copying <strong>TO</strong>.</p>
   <div class="step">
     <label for="im-link">Link to this file</label>
-    <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off">
-    <div class="hint">Use Share › Copy link, or copy the address from your browser.</div>
+    <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off" aria-describedby="im-link-hint">
+    <div class="hint" id="im-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
   </div>
   <div class="step">
     <div class="label-row">
@@ -197,19 +201,19 @@
     <input type="file" id="im-file" accept=".json,application/json">
   </div>
   <div class="step">
-    <label class="check"><input type="checkbox" id="im-skip-resolved"> Skip resolved threads</label>
-    <div class="hint">Leaves out resolved threads and their replies. Figma's API can't resolve comments,
+    <label class="check"><input type="checkbox" id="im-skip-resolved" aria-describedby="im-skip-resolved-hint"> Skip resolved threads</label>
+    <div class="hint" id="im-skip-resolved-hint">Leaves out resolved threads and their replies. Figma's API can't resolve comments,
       so copied threads always show as open. A thread that was resolved says
       <strong>✅ Resolved</strong> and when in its text.</div>
   </div>
   <div class="step">
-    <label class="check"><input type="checkbox" id="im-skip-deleted"> Skip threads whose frame was deleted</label>
-    <div class="hint">Leaves out threads pinned to frames that were already deleted when the comments were
+    <label class="check"><input type="checkbox" id="im-skip-deleted" aria-describedby="im-skip-deleted-hint"> Skip threads whose frame was deleted</label>
+    <div class="hint" id="im-skip-deleted-hint">Leaves out threads pinned to frames that were already deleted when the comments were
       exported, and their replies. Otherwise they're placed near the top-left of the canvas.</div>
   </div>
   <button class="secondary" id="im-preview">Preview</button>
   <button class="primary" id="im-run" hidden>Post comments</button>
-  <div class="bar" id="im-bar" hidden><div></div></div>
+  <div class="bar" id="im-bar" role="progressbar" aria-label="Posting comments" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><div></div></div>
   <div class="status" id="im-status" role="status" aria-live="polite"></div>
   <table class="summary" id="im-summary" hidden></table>
 </section>
@@ -648,6 +652,9 @@ function showTab(mode) {
   var isImport = mode === 'import';
   $('tab-export').setAttribute('aria-selected', String(!isImport));
   $('tab-import').setAttribute('aria-selected', String(isImport));
+  // Only the selected tab is in the Tab order; arrow keys move between tabs.
+  $('tab-export').tabIndex = isImport ? -1 : 0;
+  $('tab-import').tabIndex = isImport ? 0 : -1;
   $('panel-export').hidden = isImport;
   $('panel-import').hidden = !isImport;
 }
@@ -952,10 +959,16 @@ async function runImport() {
   $('im-run').disabled = true;
   $('im-preview').disabled = true;
   lockImportInputs(true);
+  bar.firstElementChild.style.width = '0%';
+  bar.setAttribute('aria-valuenow', '0');
   bar.hidden = false;
+  // Screen readers announce the result once, not every "Posting N of M"; the progress bar carries progress.
+  $('im-status').setAttribute('aria-busy', 'true');
 
   function tick() {
-    bar.firstElementChild.style.width = Math.round((posted + failed) / Math.max(total, 1) * 100) + '%';
+    var percent = Math.round((posted + failed) / Math.max(total, 1) * 100);
+    bar.firstElementChild.style.width = percent + '%';
+    bar.setAttribute('aria-valuenow', String(percent));
     setStatus('im-status', 'Posting ' + (posted + failed) + ' of ' + total + '\u2026 Keep this window open.');
   }
   var onWait = waitStatus('im-status', 'posting');
@@ -1083,6 +1096,7 @@ async function runImport() {
     importPlan = null;
     $('im-run').hidden = true;
     bar.hidden = true;
+    $('im-status').removeAttribute('aria-busy');
     $('im-run').disabled = false;
     $('im-preview').disabled = false;
     lockImportInputs(false);
@@ -1097,6 +1111,15 @@ $('welcome-continue').onclick = function () {
 document.querySelectorAll('.token-guide').forEach(function (b) { b.onclick = function () { showWelcome(true); }; });
 $('tab-export').onclick = function () { showTab('export'); };
 $('tab-import').onclick = function () { showTab('import'); };
+// Arrow keys, Home, and End switch tabs, as in the WAI-ARIA tabs pattern.
+$('tabs').addEventListener('keydown', function (e) {
+  var next = { ArrowLeft: 'export', ArrowRight: 'import', Home: 'export', End: 'import' }[e.key];
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') next = currentTab === 'export' ? 'import' : 'export';
+  if (!next) return;
+  e.preventDefault();
+  showTab(next);
+  $('tab-' + next).focus();
+});
 // Post uses what Preview checked, so any later change to these asks for a fresh preview.
 IMPORT_INPUTS.forEach(function (id) {
   $(id).addEventListener(id === 'im-link' || id === 'im-token' ? 'input' : 'change', function () {
