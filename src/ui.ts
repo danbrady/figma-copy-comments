@@ -206,7 +206,7 @@ const UNMATCHED_NOTE = 'Comments pinned to frames this file doesn’t have go ne
 function misplacedHelp(n: number): string {
   return (n === 1 ? '1 reply is' : n + ' replies are') + ' under the wrong thread. A re-run won’t move ' +
     (n === 1 ? 'it' : 'them') + ': delete ' + (n === 1 ? 'that reply' : 'those replies') + ' in this file, then click ' +
-    'Preview and Post comments again to post ' + (n === 1 ? 'it' : 'them') + ' in the right thread. ' +
+    '**Preview** and **Post comments** again to post ' + (n === 1 ? 'it' : 'them') + ' in the right thread. ' +
     'The plugin’s developer console lists ' + (n === 1 ? 'it' : 'them') + '.';
 }
 
@@ -246,6 +246,21 @@ interface StatusMessage {
   note?: string;
 }
 
+// Status text may wrap control names in **double asterisks**, which show in bold.
+// Built from text nodes, so message text (including Figma error details) is never parsed as HTML.
+function appendMarked(node: HTMLElement, content: string): void {
+  content.split(/\*\*(.+?)\*\*/g).forEach((part, i) => {
+    if (!part) return;
+    if (i % 2) {
+      const strong = document.createElement('strong');
+      strong.textContent = part;
+      node.appendChild(strong);
+    } else {
+      node.appendChild(document.createTextNode(part));
+    }
+  });
+}
+
 // setStatus(id, 'Working…') shows a progress line.
 // setStatus(id, { kind, title, body, note }) shows an alert; kind is success, warning, error, or info.
 function setStatus(id: string, status: string | StatusMessage): void {
@@ -263,7 +278,7 @@ function setStatus(id: string, status: string | StatusMessage): void {
       if (!content) return;
       const node = document.createElement(tag);
       node.className = className;
-      node.textContent = content;
+      appendMarked(node, content);
       text.appendChild(node);
     });
   el.appendChild(icon);
@@ -312,7 +327,7 @@ function rememberToken(apiHost: string, token: string, remember: boolean): void 
 
 function readInputs(prefix: 'ex' | 'im'): ReadInputs {
   const link = parseFileLink(inputEl(prefix + '-link').value);
-  if (!link) throw new Error('Paste a link to this file. In Figma, use Share \u203a Copy link.');
+  if (!link) throw new Error('Paste a link to this file. In Figma, use **Share \u203a Copy link**.');
   const token = inputEl(prefix + '-token').value.trim();
   if (!token) throw new Error('Paste a personal access token.');
   return { link, token, remember: inputEl(prefix + '-remember').checked };
@@ -370,7 +385,7 @@ async function runExport(): Promise<void> {
       setStatus('ex-status', { kind: 'success', title: 'Export complete',
         body: comments.length + ' comments were saved to “' + safeFileName(fileName) + '”.',
         note: n ? n + (n === 1 ? ' thread is pinned to a deleted frame' : ' threads are pinned to deleted frames') + '. On import, ' +
-          (n === 1 ? 'it goes' : 'they go') + ' to the top-left of the canvas unless you tick Skip threads whose frame was deleted.' : '' });
+          (n === 1 ? 'it goes' : 'they go') + ' to the top-left of the canvas unless you tick **Skip threads whose frame was deleted**.' : '' });
     }
   } catch (err) {
     setStatus('ex-status', { kind: 'error', title: 'Export failed', body: messageOf(err) });
@@ -406,11 +421,11 @@ async function runPreview(): Promise<void> {
   try {
     const input = readInputs('im');
     const file = inputEl('im-file').files?.[0];
-    if (!file) throw new Error('Choose the .json file that Export downloaded.');
+    if (!file) throw new Error('Choose the .json file that **Export** downloaded.');
     const data = await readJsonFile(file);
     if (!isExportFile(data)) throw new Error('That file was not exported by Copy Comments.');
     if (data.source.apiHost === input.link.apiHost && data.source.fileKey === input.link.key) {
-      throw new Error('This is the same file the comments were exported from. Open the file you’re copying TO and use the Import tab there.');
+      throw new Error('This is the same file the comments were exported from. Open the file you’re copying TO and use the **Import** tab there.');
     }
 
     setStatus('im-status', 'Checking comments already in this file…');
@@ -423,7 +438,7 @@ async function runPreview(): Promise<void> {
       const here = await ask('locate', { ids: targetIds });
       if (checkOpenFile(existing, here).wrongFile) {
         throw new PluginError('The file in the link has comments pinned to frames that aren’t in the open file, ' +
-          'so the link is probably for a different file. Copy the link of the file that’s open right now, then click Preview again.',
+          'so the link is probably for a different file. Copy the link of the file that’s open right now, then click **Preview** again.',
           { title: 'Check the link', kind: 'warning' });
       }
     }
@@ -479,7 +494,7 @@ async function runPreview(): Promise<void> {
       $('im-run').hidden = false;
     } else {
       setStatus('im-status', { kind: 'info', title: 'Ready to post ' + c.toPost + (c.toPost === 1 ? ' comment' : ' comments'),
-        body: timing + ' Review the numbers, then click Post comments.',
+        body: timing + ' Review the numbers, then click **Post comments**.',
         note: [c.unmatched ? UNMATCHED_NOTE : '', misplacedNote].filter(Boolean).join('\n\n') });
       $('im-run').hidden = false;
     }
@@ -628,11 +643,11 @@ async function runRemoval(): Promise<void> {
     } else {
       setStatus('im-status', { kind: 'warning', title: 'Some copied comments are still there',
         body: remaining + (remaining === 1 ? ' copied comment' : ' copied comments') + ' couldn’t be removed. ' +
-          'Click Remove copied comments again to retry.' });
+          'Click **Remove copied comments** again to retry.' });
     }
   } catch (err) {
     setStatus('im-status', { kind: 'error', title: 'Removal stopped', body: messageOf(err),
-      note: mine ? 'Some comments may already be removed. Click Remove copied comments again to continue.' : '' });
+      note: mine ? 'Some comments may already be removed. Click **Remove copied comments** again to continue.' : '' });
   } finally {
     bar.hidden = true;
     $('im-status').removeAttribute('aria-busy');
@@ -768,13 +783,13 @@ async function runImport(): Promise<void> {
       setStatus('im-status', { kind: 'warning', title: 'Finished with problems',
         body: [
           missing.length ? s1(missing.length, 'comment isn’t', 'comments aren’t') + ' in this file. This is usually a brief ' +
-            'network or Figma hiccup. Click Preview, then Post comments again; comments already copied are skipped.' : '',
+            'network or Figma hiccup. Click **Preview**, then **Post comments** again; comments already copied are skipped.' : '',
           check.misplaced.length ? misplacedHelp(check.misplaced.length) : '',
         ].filter(Boolean).join('\n\n') });
     }
   } catch (err) {
     setStatus('im-status', { kind: 'error', title: 'Import stopped', body: messageOf(err),
-      note: posted ? 'Posted ' + posted + ' before stopping. Click Preview, then Post comments again to continue.' : '' });
+      note: posted ? 'Posted ' + posted + ' before stopping. Click **Preview**, then **Post comments** again to continue.' : '' });
   } finally {
     // The plan is used up: what's in the file changed, so a re-run needs a fresh Preview.
     importPlan = null;
@@ -818,7 +833,7 @@ IMPORT_INPUTS.forEach((id) => {
     importPlan = null;
     $('im-run').hidden = true;
     $('im-summary').hidden = true;
-    setStatus('im-status', { kind: 'info', body: 'Something changed since Preview. Click Preview again to update the numbers.' });
+    setStatus('im-status', { kind: 'info', body: 'Something changed since **Preview**. Click **Preview** again to update the numbers.' });
   });
 });
 $('ex-run').onclick = runExport;

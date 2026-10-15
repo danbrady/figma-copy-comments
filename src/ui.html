@@ -89,6 +89,8 @@
   .status-text { min-width: 0; }
   .status-title { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
   .status-body { white-space: pre-wrap; }
+  /* Control names in a message, such as a button or checkbox to use. */
+  .status-body strong, .status-note strong { font-weight: 600; color: var(--text); }
   .status-note {
     margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--tone) 25%, var(--bg));
     color: var(--text-2); font-size: 11px; white-space: pre-wrap;
@@ -98,8 +100,9 @@
   .summary {
     margin-top: 12px; width: 100%; border-collapse: separate; border-spacing: 0;
     border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); overflow: hidden;
+    font-size: 11px; /* the hints' and notes' size */
   }
-  .summary td { padding: 7px 12px; vertical-align: top; }
+  .summary td { padding: 6px 12px; vertical-align: top; }
   .summary tr + tr td { border-top: 1px solid var(--border); }
   /* Labels stay on one line; a long value, such as a file name, wraps instead. */
   .summary td:first-child { color: var(--text-2); white-space: nowrap; padding-right: 16px; }
@@ -142,7 +145,7 @@
   <p class="muted">A token only works for the account that made it. If one account can open both files, one token is enough; otherwise, make one in each account.</p>
   <h3>To make a token</h3>
   <ol>
-    <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
+    <li><strong>Home › [Your Name] › Settings › Security › Generate new token</strong></li>
     <li>Name it "Copy Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time copy</li>
     <li>Turn on only these permission scopes:
       <div class="token-cards">
@@ -161,7 +164,7 @@
       </div>
       <span class="muted">Using one token for both? Give it the Import token's scopes.</span>
     </li>
-    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the Export or Import tab.</li>
+    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the <strong>Export</strong> or <strong>Import</strong> tab.</li>
   </ol>
   <p class="muted">Treat tokens like passwords.
     <a href="https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens" target="_blank">Figma's token guide</a></p>
@@ -182,7 +185,7 @@
   <div class="step">
     <label for="ex-link">Link to this file</label>
     <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off" aria-describedby="ex-link-hint">
-    <div class="hint" id="ex-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
+    <div class="hint" id="ex-link-hint">Use <strong>Share › Copy link</strong>, or copy the address from your browser.</div>
   </div>
   <div class="step">
     <div class="label-row">
@@ -204,7 +207,7 @@
   <div class="step">
     <label for="im-link">Link to this file</label>
     <input type="text" id="im-link" placeholder="https://www.figma.com/design/…" autocomplete="off" aria-describedby="im-link-hint">
-    <div class="hint" id="im-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
+    <div class="hint" id="im-link-hint">Use <strong>Share › Copy link</strong>, or copy the address from your browser.</div>
   </div>
   <div class="step">
     <div class="label-row">
