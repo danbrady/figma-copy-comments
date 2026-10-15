@@ -58,7 +58,7 @@ function sampleDoc() {
 
 test('startup opens at the setup-screen height on first run, and the full height once dismissed', async () => {
   const first = await start();
-  assert.equal(first.calls.showUI[0].height, 505);
+  assert.equal(first.calls.showUI[0].height, 522);
   assert.equal(first.sent[0].type, 'init');
   assert.equal(first.sent[0].welcomeHidden, false);
 
@@ -93,7 +93,7 @@ test('resolve keeps the same id when name and type match, else walks page and pa
   assert.deepEqual(plain(res.result), { '2:2': '2:2', '2:9': '2:2', '7:7': '2:1', '7:8': null, '7:9': null, '8:8': null });
 });
 
-test('tokens are stored per environment and cleared when empty; unknown hosts are ignored', async () => {
+test('tokens are stored per Figma site and cleared when empty; unknown hosts are ignored', async () => {
   const p = await start();
   await p.figma.ui.onmessage({ type: 'save-token', host: 'https://api.figma-gov.com', token: 'figd_gov' });
   await p.figma.ui.onmessage({ type: 'save-token', host: 'https://api.figma.com', token: '' });

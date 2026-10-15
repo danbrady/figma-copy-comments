@@ -128,8 +128,8 @@
 
 <!-- WELCOME: shown on first run, until dismissed with "Don't show this again" -->
 <section class="welcome" id="panel-welcome" hidden>
-  <h2>Before you start, make a personal access token in each Figma environment</h2>
-  <p class="muted">Copying between two environments, such as commercial Figma and Figma for Government, needs two tokens.</p>
+  <h2>Before you start, make a personal access token</h2>
+  <p class="muted">A token only works for the account that made it. If one account can open both files, one token is enough; otherwise, make one in each account.</p>
   <h3>To make a token</h3>
   <ol>
     <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
@@ -149,6 +149,7 @@
           <code>file_comments:read</code> + <code>file_comments:write</code>
         </div>
       </div>
+      <span class="muted">Using one token for both? Give it the Import token's scopes.</span>
     </li>
     <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the Export or Import tab.</li>
   </ol>
@@ -192,7 +193,7 @@
   <p class="muted">Run this in the file you're copying <strong>TO</strong>.</p>
   <div class="step">
     <label for="im-link">Link to this file</label>
-    <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off" aria-describedby="im-link-hint">
+    <input type="text" id="im-link" placeholder="https://www.figma.com/design/…" autocomplete="off" aria-describedby="im-link-hint">
     <div class="hint" id="im-link-hint">Use Share › Copy link, or copy the address from your browser.</div>
   </div>
   <div class="step">

@@ -15,7 +15,7 @@ const WIDTH = 440;
 const HEIGHT = 600;
 // About the setup screen's height. Opening at it avoids a jump from HEIGHT;
 // the UI then measures itself and corrects the last few pixels.
-const WELCOME_HEIGHT = 505;
+const WELCOME_HEIGHT = 522;
 
 function post(message: MainToUi): void {
   figma.ui.postMessage(message);

@@ -1,7 +1,7 @@
 {
   "name": "figma-copy-comments",
   "private": true,
-  "description": "Figma plugin that copies comments between files, such as from commercial Figma to Figma for Government.",
+  "description": "Figma plugin that copies comments from one Figma file to another, even across accounts.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",

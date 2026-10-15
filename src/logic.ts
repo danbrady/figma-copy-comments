@@ -6,10 +6,6 @@ export const GOV_API: ApiHost = 'https://api.figma-gov.com';
 // Export files say which format they're in. Kept as is so earlier exports still load.
 export const FORMAT = 'comment-porter/1';
 
-export function envLabel(apiHost: string): string {
-  return apiHost === GOV_API ? 'Figma for Government' : 'commercial Figma';
-}
-
 export interface FileLink {
   apiHost: ApiHost;
   key: string;
