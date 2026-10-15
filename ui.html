@@ -292,31 +292,52 @@ function fingerprint(message) {
   return lines.join('\n');
 }
 
-// Pair each planned comment with at most one existing copy, by fingerprint. Identical
-// comments pair one-to-one, so two identical "+1" replies need two copies. Replies take
-// a copy under their thread's copy first, then any leftover with the same fingerprint.
+// A looser identity for when Figma changed the comment text on save (it rewrites
+// @mentions and blank lines, for example): the label plus the author-and-time line,
+// which is the first line after the last divider. Null if the comment isn't labeled.
+function detailsKey(message) {
+  var f = fingerprint(message);
+  if (!f) return null;
+  var lines = f.split('\n');
+  var d = lines.lastIndexOf(DIVIDER);
+  return d > 0 && d + 1 < lines.length ? lines[0] + '\n' + lines[d + 1] : null;
+}
+
+// Pair each planned comment with at most one existing copy. Identical comments pair
+// one-to-one, so two identical "+1" replies need two copies. Exact text is tried before
+// the details alone, so it decides between look-alikes, such as two comments by one
+// person in the same minute. Replies take a copy under their thread's copy first.
 function matchCopies(threads, comments) {
-  var pool = {};
+  var pools = { exact: {}, details: {} };
+  var keys = { exact: fingerprint, details: detailsKey };
   (comments || []).forEach(function (c) {
-    var f = fingerprint(c.message);
-    if (f) (pool[f] = pool[f] || []).push(c);
+    ['exact', 'details'].forEach(function (kind) {
+      var k = keys[kind](c.message);
+      if (k) (pools[kind][k] = pools[kind][k] || []).push(c);
+    });
   });
-  function take(message, accept) {
-    var list = pool[fingerprint(message)] || [];
-    for (var i = 0; i < list.length; i++) if (accept(list[i])) return list.splice(i, 1)[0];
+  var used = {};
+  function take(kind, message, accept) {
+    var list = pools[kind][keys[kind](message)] || [];
+    for (var i = 0; i < list.length; i++) {
+      if (!used[list[i].id] && accept(list[i])) { used[list[i].id] = true; return list[i]; }
+    }
     return null;
   }
+  function any() { return true; }
+  function isRoot(c) { return !c.parent_id; }
   var copies = {};
-  threads.forEach(function (t) {
-    copies[t.sourceId] = take(t.message, function (c) { return !c.parent_id; }) ||
-      take(t.message, function () { return true; });
+  [['exact', isRoot], ['exact', any], ['details', isRoot], ['details', any]].forEach(function (pass) {
+    threads.forEach(function (t) {
+      if (!copies[t.sourceId]) copies[t.sourceId] = take(pass[0], t.message, pass[1]);
+    });
   });
-  [true, false].forEach(function (underRoot) {
+  [['exact', true], ['details', true], ['exact', false], ['details', false]].forEach(function (pass) {
     threads.forEach(function (t) {
       var root = copies[t.sourceId];
       t.replies.forEach(function (r) {
         if (copies[r.sourceId]) return;
-        copies[r.sourceId] = take(r.message, function (c) { return !underRoot || (root && c.parent_id === root.id); });
+        copies[r.sourceId] = take(pass[0], r.message, function (c) { return !pass[1] || (root && c.parent_id === root.id); });
       });
     });
   });
@@ -425,14 +446,18 @@ function verifyImport(plan, targetComments) {
   return { missing: missing, misplaced: misplaced };
 }
 
-// Posts that Figma saved with different text than was sent. The plugin can't
-// recognize those as copied, so running Import again would post them twice.
+// Posts that Figma saved with different text than was sent. `recognized` says whether
+// the details still identify it as a copy; if not, running Import again would post it twice.
 function findAltered(sent, targetComments) {
   var byId = {};
   (targetComments || []).forEach(function (c) { byId[c.id] = c; });
   return sent.filter(function (s) {
     return byId[s.id] && fingerprint(byId[s.id].message) !== fingerprint(s.message);
-  }).map(function (s) { return { id: s.id, sourceId: s.sourceId, sent: s.message, saved: byId[s.id].message }; });
+  }).map(function (s) {
+    var saved = byId[s.id].message;
+    var key = detailsKey(saved);
+    return { id: s.id, sourceId: s.sourceId, sent: s.message, saved: saved, recognized: !!key && key === detailsKey(s.message) };
+  });
 }
 
 // "45 seconds", "3 minutes", "2 hours", "3 days"
@@ -896,6 +921,21 @@ async function runImport() {
   }
 
   try {
+    // A labeled point in the version history marks the file as it was before this import.
+    setStatus('im-status', 'Saving a version to this file\u2019s history\u2026');
+    try {
+      await ask('save-version', {
+        title: 'Before Copy Comments import',
+        description: 'Saved by Copy Comments before posting ' + total + (total === 1 ? ' comment' : ' comments') +
+          ' copied from \u201c' + importData.source.fileName + '\u201d (' + envLabel(importData.source.apiHost) + ').'
+      });
+    } catch (err) {
+      var noVersion = new Error('Couldn\u2019t save a version to this file\u2019s history, so nothing was posted. ' +
+        'Saving a version needs edit access to this file. (' + err.message + ')');
+      noVersion.fatal = true;
+      throw noVersion;
+    }
+
     for (var i = 0; i < plan.threads.length; i++) {
       var t = plan.threads[i];
       var rootId = t.existingId;
@@ -932,9 +972,11 @@ async function runImport() {
     var after = await api(target.link.apiHost, target.token, 'GET', path, null, waitStatus('im-status', 'checking the result'));
     var check = verifyImport(plan, after.comments || []);
     var altered = findAltered(sent, after.comments || []);
+    // Changed so much that even the details don't match: a re-run would post these again.
+    var lost = altered.filter(function (a) { return !a.recognized; });
     // A post whose text Figma changed is in the file, so it isn't counted as missing.
     var changed = {};
-    altered.forEach(function (a) { changed[a.sourceId] = true; });
+    lost.forEach(function (a) { changed[a.sourceId] = true; });
     var missing = check.missing.filter(function (id) { return !changed[id]; });
     var ok = failed === 0 && missing.length === 0 && check.misplaced.length === 0;
     renderSummary('im-summary', [
@@ -945,29 +987,34 @@ async function runImport() {
       ['Missing after check', missing.length],
       ['Replies under the wrong thread', check.misplaced.length]
     ]);
-    if (altered.length) {
-      altered.slice(0, 3).forEach(function (a) {
-        console.warn('Figma changed comment ' + a.id + '.\n--- sent ---\n' + a.sent + '\n--- saved ---\n' + a.saved);
-      });
+    lost.concat(altered.filter(function (a) { return a.recognized; })).slice(0, 3).forEach(function (a) {
+      console.warn('Figma changed comment ' + a.id + (a.recognized ? '' : ' (not recognized)') +
+        '.\n--- sent ---\n' + a.sent + '\n--- saved ---\n' + a.saved);
+    });
+    var changedNote = altered.length ? 'Figma changed the text of ' + altered.length +
+      (altered.length === 1 ? ' comment' : ' comments') + ' when it saved ' + (altered.length === 1 ? 'it' : 'them') +
+      ', for example @mentions or blank lines. The plugin still recognizes ' + (altered.length === 1 ? 'it' : 'them') +
+      ' by author and time, so running Import again is safe. Examples are in the plugin\u2019s developer console.' : '';
+    if (lost.length) {
       setStatus('im-status', { kind: 'error', title: 'Don\u2019t run Import again on this file',
-        body: 'Figma saved ' + altered.length + (altered.length === 1 ? ' comment' : ' comments') + ' with different text ' +
-          'from what the plugin sent, so the plugin can\u2019t recognize ' + (altered.length === 1 ? 'it' : 'them') +
-          ' as copied. Running Import again would post ' + (altered.length === 1 ? 'it' : 'them') + ' a second time.',
+        body: 'Figma saved ' + lost.length + (lost.length === 1 ? ' comment' : ' comments') + ' with different text ' +
+          'from what the plugin sent, so the plugin can\u2019t recognize ' + (lost.length === 1 ? 'it' : 'them') +
+          ' as copied. Running Import again would post ' + (lost.length === 1 ? 'it' : 'them') + ' a second time.',
         note: 'The comments are in the file; check that they read correctly. Examples of the change are in the plugin\u2019s developer console.' });
+    } else if (ok) {
+      setStatus('im-status', { kind: 'success', title: 'Import complete',
+        body: 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.',
+        note: [plan.counts.skipped ? 'Resolved threads were skipped.' : '', changedNote].filter(Boolean).join('\n\n') });
     } else {
-      setStatus('im-status', ok
-        ? { kind: 'success', title: 'Import complete',
-            body: 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.',
-            note: plan.counts.skipped ? 'Resolved threads were skipped.' : '' }
-        : { kind: 'warning', title: 'Finished with problems',
-            body: 'Some comments didn\u2019t make it into this file. This is usually a brief network or Figma hiccup. ' +
-              'Click Preview, then Post comments again; comments already copied are skipped.',
-            note: check.misplaced.length ? 'Some replies ended up under the wrong thread. A re-run won\u2019t move them, ' +
-              'so check those threads by hand.' : '' });
+      setStatus('im-status', { kind: 'warning', title: 'Finished with problems',
+        body: 'Some comments didn\u2019t make it into this file. This is usually a brief network or Figma hiccup. ' +
+          'Click Preview, then Post comments again; comments already copied are skipped.',
+        note: check.misplaced.length ? 'Some replies ended up under the wrong thread. A re-run won\u2019t move them, ' +
+          'so check those threads by hand.' : '' });
     }
   } catch (err) {
     setStatus('im-status', { kind: 'error', title: 'Import stopped', body: err.message,
-      note: 'Posted ' + posted + ' before stopping. Click Preview, then Post comments again to continue.' });
+      note: posted ? 'Posted ' + posted + ' before stopping. Click Preview, then Post comments again to continue.' : '' });
   } finally {
     // The plan is used up: what's in the file changed, so a re-run needs a fresh Preview.
     importPlan = null;

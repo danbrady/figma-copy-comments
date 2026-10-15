@@ -272,6 +272,46 @@ test('findAltered flags posts whose saved text differs from what was sent', () =
   const altered = plain(L.findAltered(sent, saved));
   assert.deepEqual(altered.map((a) => a.id), ['a']);
   assert.equal(altered[0].saved, saved[0].message);
+  // The author-and-time line still matches, so a re-run will recognize it.
+  assert.equal(altered[0].recognized, true);
+
+  // If the details line changed too, it can't be recognized.
+  const lost = plain(L.findAltered([sent[0]], [{ id: 'a', message: '[Copied comment]\nhi\n———\nA · Jan 1, 2026' }]));
+  assert.equal(lost[0].recognized, false);
+});
+
+test('buildPlan recognizes copies whose text Figma changed, by author and time', () => {
+  const data = sampleExport();
+  data.comments.find((c) => c.id === '10').message = 'Hey @Pat Morgan\n\nsecond paragraph';
+  const first = L.buildPlan(data, [], { '1:2': '1:2' });
+  const t10 = first.threads[0];
+  // What Figma might save: the mention rewritten and the blank line collapsed.
+  const saved = (m) => m.replace('@Pat Morgan', '@pat.morgan').replace('\n\n', '\n');
+  const existing = [
+    { id: 'n10', message: saved(t10.message) },
+    { id: 'n11', parent_id: 'n10', message: t10.replies[0].message }
+  ];
+  const rerun = L.buildPlan(data, existing, { '1:2': '1:2' });
+  assert.equal(rerun.threads[0].existingId, 'n10');
+  assert.equal(rerun.threads[0].replies[0].existingId, 'n11');
+  assert.equal(rerun.counts.unrecognized, 0);
+  assert.deepEqual(plain(L.verifyImport(first, existing.concat(
+    rerun.threads.slice(1).map((t, i) => ({ id: 'x' + i, message: t.message })),
+    [{ id: 'y', parent_id: 'n10', message: t10.replies[1].message }]))), { missing: [], misplaced: [] });
+});
+
+test('exact text decides between two comments by one person in the same minute', () => {
+  const data = sampleExport();
+  // A second thread by the same author at the same minute as thread 10, with different text.
+  data.comments.push({ id: '15', user: user('A'), created_at: '2026-01-01T00:00:30Z', message: 'other', client_meta: { x: 0, y: 0 }, reactions: [] });
+  const plan = L.buildPlan(data, [], { '1:2': '1:2' });
+  const t15 = plan.threads.find((t) => t.sourceId === '15');
+  const t10 = plan.threads.find((t) => t.sourceId === '10');
+  assert.equal(L.detailsKey(t15.message), L.detailsKey(t10.message));
+  // Only thread 15's copy exists: it must not be claimed by thread 10.
+  const rerun = L.buildPlan(data, [{ id: 'c15', message: t15.message }], { '1:2': '1:2' });
+  assert.equal(rerun.threads.find((t) => t.sourceId === '15').existingId, 'c15');
+  assert.equal(rerun.threads.find((t) => t.sourceId === '10').existingId, null);
 });
 
 test('formatWait picks a readable unit', () => {
