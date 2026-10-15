@@ -12,6 +12,12 @@ const L = vm.createContext({ Intl, Date, Object, String, Array });
 vm.runInContext(logic, L);
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
+
+test('the whole ui.html script parses, not just the logic block', () => {
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  assert.equal(scripts.length, 1);
+  assert.doesNotThrow(() => new vm.Script(scripts[0], { filename: 'ui.html' }));
+});
 const user = (handle) => ({ id: handle, handle, img_url: '' });
 
 test('parseFileLink: commercial, gov, branch, and junk', () => {

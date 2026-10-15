@@ -1,0 +1,11 @@
+{
+  "name": "figma-copy-comments",
+  "private": true,
+  "description": "Figma plugin that copies comments between files, such as from commercial Figma to Figma for Government.",
+  "scripts": {
+    "test": "node --test test/logic.test.js test/main.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
