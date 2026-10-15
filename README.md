@@ -11,8 +11,8 @@ Every thread and reply is re-posted in the file you're copying TO, in its origin
 [Copied comment]
 Original comment text
 ———
-alex.rivera · Oct 1, 2026, 9:52 AM ET
-✅ Resolved Oct 1, 2026, 1:20 PM ET
+alex.rivera · Oct 1, 2026, 9:52:14 AM ET
+✅ Resolved Oct 1, 2026, 1:20:05 PM ET
 Reactions: :+1: ×3 (A. Lee, B. Ortiz, C. Kim)
 ```
 
@@ -25,7 +25,7 @@ Open threads have no `Resolved` line, and replies start with `[Copied reply]`. T
   - who resolved a thread (the API doesn't provide it)
   - images or attachments in comments
   - live @mentions: they're posted as text, which Figma may rewrite when it saves the comment. The pilot checks whether that notifies anyone.
-- **Safe to re-run:** the plugin recognizes comments it already copied by their author, time, and text (ignoring any `Location:` line), and skips them. Figma sometimes changes comment text when it saves it, for example rewriting @mentions or removing blank lines; those copies are still recognized by the author and time below the `———` line. Identical comments, such as two "+1" replies from the same person in the same minute, are counted separately. Two people can work on the same file, or you can retry after an error, without creating duplicates. Editing a copied comment's text by hand makes it unrecognizable, so a re-run would post it again. Preview warns when the file has copied comments that don't match the export file. Export each original file once and reuse that export file for every Import: a newer export, taken after reactions or resolved states changed, won't match comments posted from the older one.
+- **Safe to re-run:** the plugin recognizes comments it already copied by their author, time, and text (ignoring any `Location:` line), and skips them. Figma sometimes changes comment text when it saves it, for example rewriting @mentions or removing blank lines; those copies are still recognized by the author and time below the `———` line. Identical comments, such as two "+1" replies from the same person in the same second, are counted separately. Two people can work on the same file, or you can retry after an error, without creating duplicates. Editing a copied comment's text by hand makes it unrecognizable, so a re-run would post it again. Preview warns when the file has copied comments that don't match the export file. Export each original file once and reuse that export file for every Import: a newer export, taken after reactions or resolved states changed, won't match comments posted from the older one.
 
 ---
 

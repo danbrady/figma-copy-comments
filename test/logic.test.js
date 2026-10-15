@@ -32,9 +32,11 @@ test('parseFileLink: commercial, gov, branch, and junk', () => {
 });
 
 test('formatTime: Eastern time, readable, DST-independent label', () => {
-  assert.equal(L.formatTime('2026-03-14T14:42:00Z'), 'Mar 14, 2026, 10:42 AM ET');
-  assert.equal(L.formatTime('2026-01-05T00:05:00Z'), 'Jan 4, 2026, 7:05 PM ET');
-  assert.equal(L.formatTime('2026-10-01T04:00:00Z'), 'Oct 1, 2026, 12:00 AM ET');
+  assert.equal(L.formatTime('2026-03-14T14:42:00Z'), 'Mar 14, 2026, 10:42:00 AM ET');
+  assert.equal(L.formatTime('2026-01-05T00:05:00Z'), 'Jan 4, 2026, 7:05:00 PM ET');
+  assert.equal(L.formatTime('2026-10-01T04:00:00Z'), 'Oct 1, 2026, 12:00:00 AM ET');
+  // Milliseconds are dropped, not rounded.
+  assert.equal(L.formatTime('2026-09-30T19:59:38.835Z'), 'Sep 30, 2026, 3:59:38 PM ET');
   assert.equal(L.formatTime(null), '');
 });
 
@@ -50,15 +52,15 @@ test('formatReactions groups by emoji in first-seen order', () => {
 
 test('root and reply messages start with a label, then the comment, a rule, and the details', () => {
   const root = {
-    id: '111', order_id: '12', user: user('Jane Doe'), created_at: '2026-03-14T14:42:00Z',
+    id: '111', order_id: '12', user: user('Jane Doe'), created_at: '2026-03-14T14:42:07Z',
     resolved_at: '2026-03-20T20:05:00Z', message: 'Fix the padding', reactions: [{ emoji: ':+1:', user: user('Sam') }]
   };
   assert.equal(L.buildRootMessage(root, null), [
     '[Copied comment]',
     'Fix the padding',
     '———',
-    'Jane Doe · Mar 14, 2026, 10:42 AM ET',
-    '✅ Resolved Mar 20, 2026, 4:05 PM ET',
+    'Jane Doe · Mar 14, 2026, 10:42:07 AM ET',
+    '✅ Resolved Mar 20, 2026, 4:05:00 PM ET',
     'Reactions: :+1: ×1 (Sam)'
   ].join('\n'));
 
@@ -66,15 +68,15 @@ test('root and reply messages start with a label, then the comment, a rule, and 
     '[Copied comment]',
     'Fix the padding',
     '———',
-    'Jane Doe · Mar 14, 2026, 10:42 AM ET',
+    'Jane Doe · Mar 14, 2026, 10:42:07 AM ET',
     'Location: Page 1 › Card (original pin could not be matched)'
   ].join('\n'));
 
   const reply = L.buildReplyMessage({ id: '222', user: user('Sam'), created_at: '2026-03-15T13:10:00Z', message: 'Done', reactions: [] });
-  assert.equal(reply, '[Copied reply]\nDone\n———\nSam · Mar 15, 2026, 9:10 AM ET');
+  assert.equal(reply, '[Copied reply]\nDone\n———\nSam · Mar 15, 2026, 9:10:00 AM ET');
 
   const empty = L.buildReplyMessage({ id: '333', user: null, created_at: '2026-03-15T13:10:00Z', message: '', reactions: [] });
-  assert.equal(empty, '[Copied reply]\n———\nunknown · Mar 15, 2026, 9:10 AM ET');
+  assert.equal(empty, '[Copied reply]\n———\nunknown · Mar 15, 2026, 9:10:00 AM ET');
 });
 
 test('fingerprint ignores the Location line and whitespace drift, and skips ordinary comments', () => {
@@ -265,8 +267,8 @@ test('buildPlan counts copied comments that match nothing in the export', () => 
   const existing = [
     { id: 'n10', message: plan.threads[0].message },
     // Same label, but the text differs from anything this export would post.
-    { id: 'old', message: '[Copied comment]\nan older version\n———\nA · Jan 1, 2026, 7:00 AM ET' },
-    { id: 'old2', parent_id: 'old', message: '[Copied reply]\nreply\n———\nB · Jan 1, 2026, 8:00 AM ET' },
+    { id: 'old', message: '[Copied comment]\nan older version\n———\nA · Jan 1, 2026, 7:00:00 AM ET' },
+    { id: 'old2', parent_id: 'old', message: '[Copied reply]\nreply\n———\nB · Jan 1, 2026, 8:00:00 AM ET' },
     { id: 'x', message: 'an ordinary comment' }
   ];
   const rerun = L.buildPlan(data, existing, { '1:2': '1:2' });
@@ -276,14 +278,14 @@ test('buildPlan counts copied comments that match nothing in the export', () => 
 
 test('findAltered flags posts whose saved text differs from what was sent', () => {
   const sent = [
-    { id: 'a', message: '[Copied comment]\nhi :+1:\n———\nA · Jan 1, 2026, 7:00 AM ET' },
-    { id: 'b', message: '[Copied reply]\nok\n———\nB · Jan 1, 2026, 8:00 AM ET' },
-    { id: 'c', message: '[Copied reply]\ngone\n———\nB · Jan 1, 2026, 9:00 AM ET' }
+    { id: 'a', message: '[Copied comment]\nhi :+1:\n———\nA · Jan 1, 2026, 7:00:00 AM ET' },
+    { id: 'b', message: '[Copied reply]\nok\n———\nB · Jan 1, 2026, 8:00:00 AM ET' },
+    { id: 'c', message: '[Copied reply]\ngone\n———\nB · Jan 1, 2026, 9:00:00 AM ET' }
   ];
   const saved = [
-    { id: 'a', message: '[Copied comment]\nhi 👍\n———\nA · Jan 1, 2026, 7:00 AM ET' },
+    { id: 'a', message: '[Copied comment]\nhi 👍\n———\nA · Jan 1, 2026, 7:00:00 AM ET' },
     // Trailing whitespace is normalized, so this one still matches.
-    { id: 'b', message: '[Copied reply]\nok  \n———\nB · Jan 1, 2026, 8:00 AM ET\n' }
+    { id: 'b', message: '[Copied reply]\nok  \n———\nB · Jan 1, 2026, 8:00:00 AM ET\n' }
   ];
   const altered = plain(L.findAltered(sent, saved));
   assert.deepEqual(altered.map((a) => a.id), ['a']);
@@ -316,10 +318,10 @@ test('buildPlan recognizes copies whose text Figma changed, by author and time',
     [{ id: 'y', parent_id: 'n10', message: t10.replies[1].message }]))), { missing: [], misplaced: [] });
 });
 
-test('exact text decides between two comments by one person in the same minute', () => {
+test('exact text decides between two comments by one person in the same second', () => {
   const data = sampleExport();
-  // A second thread by the same author at the same minute as thread 10, with different text.
-  data.comments.push({ id: '15', user: user('A'), created_at: '2026-01-01T00:00:30Z', message: 'other', client_meta: { x: 0, y: 0 }, reactions: [] });
+  // A second thread by the same author in the same second as thread 10, with different text.
+  data.comments.push({ id: '15', user: user('A'), created_at: '2026-01-01T00:00:00.500Z', message: 'other', client_meta: { x: 0, y: 0 }, reactions: [] });
   const plan = L.buildPlan(data, [], { '1:2': '1:2' });
   const t15 = plan.threads.find((t) => t.sourceId === '15');
   const t10 = plan.threads.find((t) => t.sourceId === '10');
