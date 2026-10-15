@@ -652,9 +652,8 @@ function showTab(mode) {
   $('panel-import').hidden = !isImport;
 }
 
-var UNMATCHED_NOTE = 'Some comments were pinned to frames that this file doesn\u2019t have, usually because ' +
-  'a frame was renamed, moved, or deleted after the comment was made. Those comments are still copied: each is ' +
-  'placed near its old position, and its text says which frame it was on.';
+var UNMATCHED_NOTE = 'Comments pinned to frames this file doesn\u2019t have go near their old spot, or the ' +
+  'top-left of the canvas if the frame was deleted. Their text says where they were.';
 
 // Figma can't move a reply, so a misplaced one is deleted and posted again.
 function misplacedHelp(n) {
@@ -816,9 +815,8 @@ async function runExport() {
       var n = check.threadsWithoutFrame;
       setStatus('ex-status', { kind: 'success', title: 'Export complete',
         body: comments.length + ' comments were saved to \u201c' + safeFileName(fileName) + '\u201d.',
-        note: n ? n + (n === 1 ? ' thread is' : ' threads are') + ' pinned to frames that no longer exist in this file, ' +
-          'usually deleted after the thread was resolved. They\u2019re still exported, and on import they\u2019re ' +
-          'placed near the top-left of the canvas unless you tick Skip threads whose frame was deleted.' : '' });
+        note: n ? n + (n === 1 ? ' thread is pinned to a deleted frame' : ' threads are pinned to deleted frames') + '. On import, ' +
+          (n === 1 ? 'it goes' : 'they go') + ' to the top-left of the canvas unless you tick Skip threads whose frame was deleted.' : '' });
     }
   } catch (err) {
     setStatus('ex-status', { kind: 'error', title: 'Export failed', body: err.message });
