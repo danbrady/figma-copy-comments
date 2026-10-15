@@ -2,7 +2,7 @@
 // Makes the REST calls (the Plugin API has no comments API) and asks the main thread
 // (src/code.ts) for anything that needs the document. Built into dist/ui.html.
 import {
-  FORMAT, buildPlan, checkOpenFile, commentNodeIds, detailsKey, envLabel, findAltered, formatWait,
+  FORMAT, buildPlan, checkOpenFile, commentNodeIds, detailsKey, findAltered, formatWait,
   groupCopied, parseFileLink, safeFileName, verifyImport,
 } from './logic';
 import type { CopiedGroup, FileLink, Plan, SentComment } from './logic';
@@ -79,10 +79,10 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function friendlyError(status: number, detail: string, apiHost: string, method: string): string {
+function friendlyError(status: number, detail: string, method: string): string {
   const scope = method === 'GET' ? 'file_comments:read' : 'file_comments:write';
-  if (status === 403) return 'Figma refused the request (403). Check that the token was made in ' + envLabel(apiHost) +
-    ', has not expired, has the scope ' + scope + ', and that you can open this file.';
+  if (status === 403) return 'Figma refused the request (403). Check that the token was made by an account that can open ' +
+    'this file, hasn\u2019t expired, and has the scope ' + scope + '.';
   if (status === 404) return 'File not found (404). Check the link.';
   if (status === 400) return 'Figma rejected the request (400): ' + detail;
   return 'Figma returned ' + status + ': ' + detail;
@@ -119,8 +119,8 @@ async function api<T = unknown>(apiHost: string, token: string, method: Method, 
       if (body) headers['Content-Type'] = 'application/json';
       res = await fetch(apiHost + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
     } catch {
-      throw new PluginError('Could not reach ' + apiHost + '. Check your connection. In Figma for Government, ' +
-        'the network or browser may be blocking this plugin from calling the API; see the README.', { fatal: true });
+      throw new PluginError('Could not reach ' + apiHost + '. Check your connection. Your network or browser ' +
+        'may also be blocking this plugin from calling Figma\u2019s API; see the README.', { fatal: true });
     }
     if (res.status === 429) {
       // Retry-After is often unreadable from a plugin (CORS), so there's a fallback schedule.
@@ -139,7 +139,7 @@ async function api<T = unknown>(apiHost: string, token: string, method: Method, 
     let data: { err?: string; message?: string } & Record<string, unknown>;
     try { data = JSON.parse(text); } catch { data = { err: text }; }
     if (!res.ok) {
-      throw new PluginError(friendlyError(res.status, data.err || data.message || text, apiHost, method), {
+      throw new PluginError(friendlyError(res.status, data.err || data.message || text, method), {
         status: res.status,
         fatal: res.status === 401 || res.status === 403 || res.status === 404,
       });
@@ -297,7 +297,7 @@ function renderSummary(id: string, rows: SummaryRow[]): void {
   table.hidden = shown.length === 0;
 }
 
-// Prefill the token for whichever environment the pasted link points at.
+// Prefill the token saved for the Figma site the pasted link is on.
 function wireToken(linkId: string, tokenId: string): void {
   inputEl(linkId).addEventListener('input', () => {
     const parsed = parseFileLink(inputEl(linkId).value);
@@ -312,7 +312,7 @@ function rememberToken(apiHost: string, token: string, remember: boolean): void 
 
 function readInputs(prefix: 'ex' | 'im'): ReadInputs {
   const link = parseFileLink(inputEl(prefix + '-link').value);
-  if (!link) throw new Error('Paste a link to this file. It should start with https://www.figma.com/design/ or https://www.figma-gov.com/design/.');
+  if (!link) throw new Error('Paste a link to this file. In Figma, use Share \u203a Copy link.');
   const token = inputEl(prefix + '-token').value.trim();
   if (!token) throw new Error('Paste a personal access token.');
   return { link, token, remember: inputEl(prefix + '-remember').checked };
@@ -440,7 +440,7 @@ async function runPreview(): Promise<void> {
     const plan = importPlan;
     const c = plan.counts;
     renderSummary('im-summary', [
-      ['From', data.source.fileName + ' (' + envLabel(data.source.apiHost) + ')'],
+      ['From', data.source.fileName],
       ['Threads', c.roots],
       ['Replies', c.replies],
       c.skipped ? ['Skipped: resolved threads and their replies', c.skipped]
