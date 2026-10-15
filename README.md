@@ -58,7 +58,9 @@ In the file you're copying FROM, choose **File › Save local copy…**. Then im
 3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
 4. Click **Post comments** and keep the window open until it says **Import complete**. Before posting, the plugin saves a version named **Before Copy Comments import** to the file's version history, which needs edit access to the file; if it can't save one, it stops without posting. Comments aren't part of version history, so restoring that version won't remove the copied comments. It marks when the import happened. The plugin then checks the file and reports anything missing.
 
-If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped.
+If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped. Before reporting a comment as missing, the plugin checks the file again for up to 15 seconds, because Figma can take a moment to list new comments. A post that returned an error but did reach the file counts as posted.
+
+If a reply ends up under the wrong thread, Preview and the final message say so; the developer console lists which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
 
 If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. Examples of the change are in the developer console (**Plugins › Development › Show/Hide console**).
 
