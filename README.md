@@ -40,9 +40,9 @@ The first time you open the plugin, a setup screen explains the tokens and how t
 | Export | the environment you're copying FROM | `file_comments:read` |
 | Import | the environment you're copying TO | `file_comments:read` **and** `file_comments:write` |
 
-Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result, and write to post. You need to be able to open both files and comment on the file you're copying TO. Copied comments are posted under the name of whoever runs Import.
+Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result. It uses write to post, and to remove copied comments if you undo an import. You need to be able to open both files and comment on the file you're copying TO. Copied comments are posted under the name of whoever runs Import.
 
-Whoever runs Import should have a **Full or Dev seat** in the environment you're copying TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes.
+Whoever runs Import should have a **Full or Dev seat** in the environment you're copying TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes. Removing copied comments runs at the same pace.
 
 ### 1. Export (in the file you're copying FROM)
 1. Open the file you're copying FROM and choose **Plugins › Copy Comments**. It opens on the **Export** tab.
@@ -58,14 +58,25 @@ In the file you're copying FROM, choose **File › Save local copy…**. Then im
 3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. To leave out threads pinned to frames that were already deleted when you exported, and their replies, tick **Skip threads whose frame was deleted**; otherwise they're placed near the top-left of the canvas. In long-lived files these are often most of the old threads: in one file we tested, 163 of 230. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
 4. Click **Post comments** and keep the window open until it says **Import complete**.
 
+### If something goes wrong
 If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped. Before reporting a comment as missing, the plugin checks the file again for up to 15 seconds, because Figma can take a moment to list new comments. A post that returned an error but did reach the file counts as posted.
 
 If a reply ends up under the wrong thread, Preview and the final message say so; the developer console lists which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
 
 If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. Examples of the change are in the developer console (**Plugins › Development › Show/Hide console**).
 
-**Undo an import:** on the Import tab, click **Remove copied comments from this file…**. The plugin counts the comments that start with `[Copied comment]` or `[Copied reply]` (or the older `[Migrated …]` labels), says who posted them, and asks before removing anything. Figma only lets people delete their own comments, so it removes the ones posted by your token's owner and leaves everything else, including other people's copies. Restoring a version from the file's version history doesn't remove comments, because Figma doesn't keep comments in version history.
+### 4. Undo an import (if needed)
+To take the copied comments back out of the file you're copying TO:
+1. Open that file, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
+2. Paste the file's link and your **Import** token. You don't need the `.json` file.
+3. Click **Remove copied comments from this file…**. The plugin counts the comments that start with `[Copied comment]` or `[Copied reply]`, plus the older `[Migrated comment]` and `[Migrated reply]` labels, and says who posted them. Nothing is removed yet.
+4. Click the red **Remove** button to confirm, or **Cancel**. Keep the window open until it says **Copied comments removed**.
 
+Figma only lets people delete their own comments, so the plugin removes the copies posted by your token's owner and leaves everything else: regular comments and other people's copies. If someone else also ran Import on this file, they can remove theirs with their own token. Removing can't be undone; run Import again to put the comments back.
+
+Restoring an earlier version from the file's version history doesn't remove comments, because Figma doesn't keep comments in version history.
+
+### Good to know
 **Tokens:** "Remember on this device" stores a token only in this browser or app, through Figma's plugin storage. Untick it on shared computers. Tokens are only ever sent to `api.figma.com` or `api.figma-gov.com`; the manifest blocks every other domain.
 
 **The exported file:** the `.json` holds every comment's text, the authors' Figma handles, and the names of the frames comments are pinned to. Treat it like the design file: keep it out of public channels, and delete it once the copied comments are checked.
@@ -103,10 +114,11 @@ Development plugins only work in the **desktop app** ([docs](https://help.figma.
 
 Choose **Plugins › Development › Import plugin from manifest…** and select this folder's `manifest.json`.
 
-### 2. Spike: confirm the two unknowns before anything else
+### 2. Spike: confirm the unknowns before anything else
 - [ ] **Commercial:** run Export on a test file. Check that the `.json` downloads and the counts look right.
 - [ ] **Gov, plugin can run:** do development plugins run in the Figma for Government org at all? If not, this check moves to after the Community publish (step 4).
 - [ ] **Gov, API reachable:** Import's **Preview** calls `GET https://api.figma-gov.com/v1/files/:key/comments` from the plugin. A plugin's UI has a `null` origin, so this only works if the Gov API allows cross-origin requests ([network requests](https://developers.figma.com/docs/plugins/making-network-requests/)). If you see "Could not reach https://api.figma-gov.com", use the fallback below.
+- [ ] **Gov, posting and removing:** **Post comments** and **Remove copied comments** send POST and DELETE requests. Browsers check those separately from GET (a CORS preflight), so confirm both work in Gov, not just Preview.
 
 ### 3. Pilot
 Make a throwaway commercial file containing:
@@ -114,13 +126,13 @@ Make a throwaway commercial file containing:
 - a thread with replies, plus one resolved thread and one open thread
 - reactions on a thread and on a reply, an @mention, emoji, and one very long comment
 
-Export it, save a local copy, import it to Gov, then run Import. Check:
+Export it, save a local copy, import it to Gov, then run Import. Use a fresh copy for each pilot run, or remove the previous run's copies first (see **Undo an import** above). Check:
 - [ ] The final message says **Import complete** (no missing comments, no misplaced replies). Open a few copied comments with @mentions or blank lines and check that they read correctly; Figma may have rewritten them. If the final message says **Don't run Import again on this file** instead, copy the examples from the developer console, because the plugin's message format needs to change before anyone else imports.
-- [ ] Check whether the people @mentioned in the original comments were notified when the copies were posted.
 - [ ] Pins sit on the same frames and offsets. Note which **page** the canvas pins and canvas regions land on, because those positions carry no page.
 - [ ] Headers read correctly, and the long comment wasn't rejected.
 - [ ] Running Import again reports **"Already up to date."**
-- [ ] Note who was notified about the posted comments (file owner, followers, anyone else), and whether by email.
+- [ ] Note who was notified about the posted comments (file owner, followers, people @mentioned in the originals, anyone else), and whether by email.
+- [ ] **Remove copied comments** removes every copy and nothing else: add one regular comment of your own to the file first, and check that it's still there afterward.
 
 ### 4. Publish and approve
 1. Publish to Figma Community under a team or organization profile ([how-to](https://help.figma.com/hc/en-us/articles/360042293394-Publish-classic-plugins-to-the-Figma-Community)). Figma reviews it first, which takes some time.
@@ -130,4 +142,4 @@ Export it, save a local copy, import it to Gov, then run Import. Check:
 3. Repeat the pilot's Import step **in a browser** with the published version.
 
 ### Fallback: the plugin can't reach `api.figma-gov.com`
-Keep using the plugin for **Export**. For **Import**, one technical person posts the comments from the `.json` with a script against `https://api.figma-gov.com`, reusing `buildPlan` and the message format from `ui.html`. Everyone else only does Export.
+Keep using the plugin for **Export**. For **Import**, one technical person posts the comments from the `.json` with a script against `https://api.figma-gov.com`, reusing `buildPlan` and the message format from `ui.html`, and removes them the same way if an import needs undoing (`groupCopied` finds them). Everyone else only does Export.
