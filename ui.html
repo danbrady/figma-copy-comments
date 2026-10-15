@@ -888,12 +888,13 @@ async function runPreview() {
       ['From', importData.source.fileName + ' (' + envLabel(importData.source.apiHost) + ')'],
       ['Threads', c.roots],
       ['Replies', c.replies],
-      c.skipped ? ['Skipped: resolved threads and their replies', c.skipped] : ['Resolved threads (noted in text)', c.resolved],
+      c.skipped ? ['Skipped: resolved threads and their replies', c.skipped]
+        : c.resolved ? ['Resolved threads (noted in text)', c.resolved] : null,
       c.skippedDeleted ? ['Skipped: threads on deleted frames and their replies', c.skippedDeleted] : null,
-      ['Already copied (will skip)', c.done],
+      c.done ? ['Already copied (will skip)', c.done] : null,
       c.unrecognized ? ['Copied earlier, not recognized', c.unrecognized] : null,
       c.misplaced ? ['Replies under the wrong thread', c.misplaced] : null,
-      ['Pins that could not be matched', c.unmatched],
+      c.unmatched ? ['Pins that could not be matched', c.unmatched] : null,
       ['Comments to post now', c.toPost]
     ]);
     logMisplaced(importPlan, importPlan.misplaced.map(function (r) { return r.sourceId; }));
@@ -1045,12 +1046,12 @@ async function runImport() {
     missing.forEach(function (id) { missingIds[id] = true; });
     var recovered = failedIds.filter(function (id) { return !missingIds[id]; }).length;
     var ok = missing.length === 0 && check.misplaced.length === 0;
+    // Rows with nothing to report are left out.
     renderSummary('im-summary', [
       ['Posted now', posted + recovered],
-      ['Already there before', plan.counts.done],
-      altered.length ? ['Text changed by Figma', altered.length] : null,
-      ['Missing after check', missing.length],
-      ['Replies under the wrong thread', check.misplaced.length]
+      plan.counts.done ? ['Already there before', plan.counts.done] : null,
+      missing.length ? ['Missing after check', missing.length] : null,
+      check.misplaced.length ? ['Replies under the wrong thread', check.misplaced.length] : null
     ]);
     lost.concat(altered.filter(function (a) { return a.recognized; })).slice(0, 3).forEach(function (a) {
       console.warn('Figma changed comment ' + a.id + (a.recognized ? '' : ' (not recognized)') +
@@ -1058,11 +1059,6 @@ async function runImport() {
     });
     logMisplaced(plan, check.misplaced);
     var s1 = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
-    var changedNote = altered.length ? 'Figma changed the text of ' + s1(altered.length, 'comment', 'comments') +
-      ' when it saved ' + (altered.length === 1 ? 'it' : 'them') + ', for example @mentions or blank lines. The plugin still recognizes ' +
-      (altered.length === 1 ? 'it' : 'them') + ' by author and time, so running Import again is safe. Examples are in the plugin\u2019s developer console.' : '';
-    var recoveredNote = recovered ? 'Figma reported an error for ' + s1(recovered, 'post', 'posts') + ' but saved ' +
-      (recovered === 1 ? 'it' : 'them') + ' anyway, so ' + (recovered === 1 ? 'it\u2019s' : 'they\u2019re') + ' counted as posted.' : '';
     if (lost.length) {
       setStatus('im-status', { kind: 'error', title: 'Don\u2019t run Import again on this file',
         body: 'Figma saved ' + s1(lost.length, 'comment', 'comments') + ' with different text ' +
@@ -1072,18 +1068,14 @@ async function runImport() {
     } else if (ok) {
       setStatus('im-status', { kind: 'success', title: 'Import complete',
         body: (plan.counts.roots + plan.counts.replies === 1 ? 'The comment is in this file.'
-          : 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.'),
-        note: [plan.counts.skipped ? 'Resolved threads were skipped.' : '',
-          plan.counts.skippedDeleted ? 'Threads on deleted frames were skipped.' : '',
-          recoveredNote, changedNote].filter(Boolean).join('\n\n') });
+          : 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.') });
     } else {
       setStatus('im-status', { kind: 'warning', title: 'Finished with problems',
         body: [
           missing.length ? s1(missing.length, 'comment isn\u2019t', 'comments aren\u2019t') + ' in this file. This is usually a brief ' +
             'network or Figma hiccup. Click Preview, then Post comments again; comments already copied are skipped.' : '',
           check.misplaced.length ? misplacedHelp(check.misplaced.length) : ''
-        ].filter(Boolean).join('\n\n'),
-        note: [recoveredNote, changedNote].filter(Boolean).join('\n\n') });
+        ].filter(Boolean).join('\n\n') });
     }
   } catch (err) {
     setStatus('im-status', { kind: 'error', title: 'Import stopped', body: err.message,

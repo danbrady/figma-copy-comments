@@ -109,7 +109,7 @@ Make a throwaway commercial file containing:
 - reactions on a thread and on a reply, an @mention, emoji, and one very long comment
 
 Export it, save a local copy, import it to Gov, then run Import. Check:
-- [ ] The final message says **Import complete** (no missing comments, no misplaced replies). If it also says Figma changed the text of some comments, open a few with @mentions or blank lines and check that they read correctly. If it says **Don't run Import again on this file** instead, copy the examples from the developer console, because the plugin's message format needs to change before anyone else imports.
+- [ ] The final message says **Import complete** (no missing comments, no misplaced replies). Open a few copied comments with @mentions or blank lines and check that they read correctly; Figma may have rewritten them. If the final message says **Don't run Import again on this file** instead, copy the examples from the developer console, because the plugin's message format needs to change before anyone else imports.
 - [ ] Check whether the people @mentioned in the original comments were notified when the copies were posted.
 - [ ] Pins sit on the same frames and offsets. Note which **page** the canvas pins and canvas regions land on, because those positions carry no page.
 - [ ] Headers read correctly, and the long comment wasn't rejected.
