@@ -87,7 +87,7 @@ If the plugin says **Don't run Import again on this file**, don't. Figma changed
 | File | Purpose |
 |---|---|
 | `manifest.json` | Plugin manifest. `networkAccess` allows only the two Figma API hosts |
-| `code.js` | Main thread: node lookups (`getNodeByIdAsync`), and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
+| `code.js` | Main thread: node lookups (`getNodeByIdAsync`) and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
 | `ui.html` | UI, plus the REST calls (`fetch` with `X-Figma-Token`). The block between `BEGIN LOGIC` and `END LOGIC` is pure, tested logic |
 | `test/logic.test.js` | Unit tests for that logic, plus a check that the whole `ui.html` script parses |
 | `test/main.test.js` | Tests for `code.js`, run against a small fake of the Figma Plugin API |
