@@ -1,0 +1,1006 @@
+<style>
+  :root {
+    --bg: var(--figma-color-bg, #ffffff);
+    --bg-2: var(--figma-color-bg-secondary, #f5f5f5);
+    --text: var(--figma-color-text, #1e1e1e);
+    --text-2: var(--figma-color-text-secondary, #6b6b6b);
+    --border: var(--figma-color-border, #e2e2e2);
+    --brand: var(--figma-color-bg-brand, #0d99ff);
+    --brand-text: var(--figma-color-text-brand, #007be5);
+    --selected: var(--figma-color-bg-selected, #e5f4ff);
+    --hover: var(--figma-color-bg-hover, #f5f5f5);
+    --on-brand: var(--figma-color-text-onbrand, #ffffff);
+    --danger: var(--figma-color-text-danger, #dc3412);
+    --success: var(--figma-color-text-success, #14ae5c);
+    --warning: var(--figma-color-text-warning, #b86200);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font: 12px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  p { margin: 0 0 8px; }
+  .muted { color: var(--text-2); }
+  .tabs { display: flex; margin: 0 0 16px; border-bottom: 1px solid var(--border); }
+  .tab {
+    flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0;
+    padding: 10px 12px 9px; color: var(--text-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .tab:hover { background: var(--hover); color: var(--text); }
+  .tab:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+  .tab[aria-selected="true"] { background: var(--selected); color: var(--brand-text); border-bottom-color: var(--brand); }
+  .step { margin-bottom: 14px; }
+  .step label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .step .hint { color: var(--text-2); font-size: 11px; margin-top: 4px; }
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  input[type="file"] { font: inherit; color: var(--text); }
+  /* .step .check outranks .step label, which would otherwise make these display: block. */
+  .step .check { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; cursor: pointer; }
+  .step .check input { flex: none; width: 14px; height: 14px; margin: 0; cursor: pointer; }
+  a { color: var(--brand); }
+  button.primary {
+    width: 100%; padding: 9px; border: 0; border-radius: 6px;
+    background: var(--brand); color: var(--on-brand); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.secondary {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  section button + button { margin-top: 8px; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  /* Alerts: an icon, an optional title, the message, and an optional note. Tints are mixed
+     from the status color and the panel background, so they follow Figma's light and dark themes. */
+  .status {
+    --tone: var(--text-2);
+    display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: var(--bg-2); border: 1px solid transparent;
+  }
+  .status:empty { display: none; }
+  .status.success { --tone: var(--success); }
+  .status.warning { --tone: var(--warning); }
+  .status.error { --tone: var(--danger); }
+  .status.info { --tone: var(--brand); }
+  .status.success, .status.warning, .status.error, .status.info {
+    background: color-mix(in srgb, var(--tone) 9%, var(--bg));
+    border-color: color-mix(in srgb, var(--tone) 35%, var(--bg));
+  }
+  .status-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--tone); }
+  .status-icon svg { display: block; width: 16px; height: 16px; }
+  .status.progress .status-icon { color: var(--brand); }
+  .status.progress .status-icon svg { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { min-width: 0; }
+  .status-title { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .status-body { white-space: pre-wrap; }
+  .status-note {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--tone) 25%, var(--bg));
+    color: var(--text-2); font-size: 11px; white-space: pre-wrap;
+  }
+  .summary { margin-top: 12px; border-collapse: collapse; width: 100%; }
+  .summary td { padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .summary td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--bg-2); border-radius: 3px; overflow: hidden; margin-top: 12px; }
+  .bar > div { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
+  /* Label on the left, guide link on the right, sharing one baseline. */
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .step .label-row label { margin-bottom: 0; }
+  .token-guide { font-size: 11px; }
+  button.link {
+    background: none; border: 0; padding: 0; color: var(--brand-text); font: inherit; text-decoration: underline; cursor: pointer;
+  }
+  .welcome h2 { font-size: 13px; margin: 0 0 8px; }
+  .welcome h3 { font-size: 12px; margin: 14px 0 6px; }
+  .welcome ol { margin: 0 0 8px; padding-left: 18px; }
+  .welcome-check { margin: 10px 0 0; }
+  .welcome-check .check { justify-content: center; font-weight: 400; color: var(--text-2); }
+  .welcome li { margin-bottom: 2px; }
+  .token-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 8px; }
+  /* Inside step 3, span the list's indent too, so each card has room for one-line text. */
+  .welcome li .token-cards { margin-left: -18px; }
+  .token-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg-2); }
+  .token-card strong { display: block; font-size: 13px; margin-bottom: 4px; }
+  .token-card p { margin: 0 0 8px; }
+  .token-card .scopes-label {
+    display: block; margin-bottom: 3px; color: var(--text-2); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .token-card code { font-size: 10.5px; padding: 0 3px; border-radius: 3px; background: var(--bg); }
+  [hidden] { display: none !important; }
+</style>
+
+
+<!-- WELCOME: shown on first run, until dismissed with "Don't show this again" -->
+<section class="welcome" id="panel-welcome" hidden>
+  <h2>Before you start, make a personal access token in each Figma environment</h2>
+  <p class="muted">Migrating between two environments, such as commercial Figma and Figma for Government, needs two tokens.</p>
+  <h3>To make a token</h3>
+  <ol>
+    <li>Home › [Your Name] › Settings › Security › <strong>Generate new token</strong></li>
+    <li>Name it "Migrate Comments" and set <strong>Expiration</strong> to 1&nbsp;day, enough for a one-time migration</li>
+    <li>Turn on only these permission scopes:
+      <div class="token-cards">
+        <div class="token-card">
+          <strong>Export token</strong>
+          <p>Where you're migrating FROM</p>
+          <span class="scopes-label">Permission scopes</span>
+          <code>file_comments:read</code>
+        </div>
+        <div class="token-card">
+          <strong>Import token</strong>
+          <p>Where you're migrating TO</p>
+          <span class="scopes-label">Permission scopes</span>
+          <code>file_comments:read</code> + <code>file_comments:write</code>
+        </div>
+      </div>
+    </li>
+    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the Export or Import tab.</li>
+  </ol>
+  <p class="muted">Treat tokens like passwords.
+    <a href="https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens" target="_blank">Figma's token guide</a></p>
+  <button class="primary" id="welcome-continue">I've made my tokens, continue</button>
+  <div class="step welcome-check">
+    <label class="check"><input type="checkbox" id="welcome-hide" checked> Don't show this again</label>
+  </div>
+</section>
+
+<div class="tabs" role="tablist" id="tabs" hidden>
+  <button class="tab" role="tab" id="tab-export" aria-selected="true">Export</button>
+  <button class="tab" role="tab" id="tab-import" aria-selected="false">Import</button>
+</div>
+
+<!-- EXPORT -->
+<section id="panel-export" hidden>
+  <p class="muted">Run this in the file you're migrating <strong>FROM</strong>.</p>
+  <div class="step">
+    <label for="ex-link">Link to this file</label>
+    <input type="text" id="ex-link" placeholder="https://www.figma.com/design/…" autocomplete="off">
+    <div class="hint">Use Share › Copy link, or copy the address from your browser.</div>
+  </div>
+  <div class="step">
+    <div class="label-row">
+      <label for="ex-token">Personal access token</label>
+      <button class="link token-guide" type="button">Token setup guide</button>
+    </div>
+    <input type="password" id="ex-token" placeholder="figd_…" autocomplete="off">
+    <label class="check"><input type="checkbox" id="ex-remember" checked> Remember on this device</label>
+  </div>
+  <button class="primary" id="ex-run">Export comments</button>
+  <button class="secondary" id="ex-again" hidden>Download again</button>
+  <div class="status" id="ex-status" role="status" aria-live="polite"></div>
+  <table class="summary" id="ex-summary" hidden></table>
+</section>
+
+<!-- IMPORT -->
+<section id="panel-import" hidden>
+  <p class="muted">Run this in the file you're migrating <strong>TO</strong>.</p>
+  <div class="step">
+    <label for="im-link">Link to this file</label>
+    <input type="text" id="im-link" placeholder="https://www.figma-gov.com/design/…" autocomplete="off">
+    <div class="hint">Use Share › Copy link, or copy the address from your browser.</div>
+  </div>
+  <div class="step">
+    <div class="label-row">
+      <label for="im-token">Personal access token</label>
+      <button class="link token-guide" type="button">Token setup guide</button>
+    </div>
+    <input type="password" id="im-token" placeholder="figd_…" autocomplete="off">
+    <label class="check"><input type="checkbox" id="im-remember" checked> Remember on this device</label>
+  </div>
+  <div class="step">
+    <label for="im-file">Exported comments file (.json)</label>
+    <input type="file" id="im-file" accept=".json,application/json">
+  </div>
+  <div class="step">
+    <label class="check"><input type="checkbox" id="im-skip-resolved"> Skip resolved threads</label>
+    <div class="hint">Leaves out resolved threads and their replies. Figma's API can't resolve comments,
+      so migrated threads always show as open. A thread that was resolved says
+      <strong>✅ Resolved</strong> and when in its text.</div>
+  </div>
+  <button class="secondary" id="im-preview">Preview</button>
+  <button class="primary" id="im-run" hidden>Post comments</button>
+  <div class="bar" id="im-bar" hidden><div></div></div>
+  <div class="status" id="im-status" role="status" aria-live="polite"></div>
+  <table class="summary" id="im-summary" hidden></table>
+</section>
+
+<script>
+// BEGIN LOGIC — pure functions, no DOM or network. Unit-tested by test/logic.test.js.
+var COMMERCIAL_API = 'https://api.figma.com';
+var GOV_API = 'https://api.figma-gov.com';
+var FORMAT = 'comment-porter/1';
+
+function envLabel(apiHost) {
+  return apiHost === GOV_API ? 'Figma for Government' : 'commercial Figma';
+}
+
+// Accepts figma.com and figma-gov.com design/file/proto links, including branch links.
+function parseFileLink(input) {
+  var s = String(input || '').trim();
+  var m = s.match(/(?:^|\/\/|\.)(figma(?:-gov)?\.com)\/(?:design|file|proto|board|slides)\/([A-Za-z0-9]{10,})/);
+  if (!m) return null;
+  var branch = s.match(/\/branch\/([A-Za-z0-9]{10,})/);
+  return {
+    apiHost: m[1] === 'figma-gov.com' ? GOV_API : COMMERCIAL_API,
+    key: branch ? branch[1] : m[2]
+  };
+}
+
+// "Mar 14, 2026, 10:42 AM ET" — Eastern time, with the raw UTC kept in the export file.
+// Built from parts so newer ICU's narrow no-break space before AM/PM never leaks in.
+function formatTime(iso) {
+  if (!iso) return '';
+  var parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  }).formatToParts(new Date(iso)).forEach(function (p) { parts[p.type] = p.value; });
+  return parts.month + ' ' + parts.day + ', ' + parts.year + ', ' +
+    parts.hour + ':' + parts.minute + ' ' + parts.dayPeriod + ' ET';
+}
+
+// ":+1: ×3 (A, B, C) · :tada: ×1 (D)" — grouped by emoji, in first-seen order.
+function formatReactions(reactions) {
+  if (!reactions || !reactions.length) return '';
+  var order = [];
+  var byEmoji = {};
+  reactions.forEach(function (r) {
+    if (!byEmoji[r.emoji]) { byEmoji[r.emoji] = []; order.push(r.emoji); }
+    byEmoji[r.emoji].push(r.user && r.user.handle || 'unknown');
+  });
+  return order.map(function (e) {
+    return e + ' ×' + byEmoji[e].length + ' (' + byEmoji[e].join(', ') + ')';
+  }).join(' · ');
+}
+
+var DIVIDER = '———';
+var MARKERS = { '[Migrated comment]': true, '[Migrated reply]': true };
+
+// A label, the original text, a rule, then the details: author and time,
+// resolved time, reactions, and (last, when the pin didn't match) the old location.
+function buildMessage(c, marker, extra) {
+  var lines = [marker].concat(c.message ? [c.message] : [], DIVIDER,
+    (c.user && c.user.handle || 'unknown') + ' · ' + formatTime(c.created_at), extra);
+  var reactions = formatReactions(c.reactions);
+  if (reactions) lines.push('Reactions: ' + reactions);
+  return lines;
+}
+
+function buildRootMessage(c, location) {
+  var lines = buildMessage(c, '[Migrated comment]', c.resolved_at ? ['✅ Resolved ' + formatTime(c.resolved_at)] : []);
+  if (location) lines.push('Location: ' + location + ' (original pin could not be matched)');
+  return lines.join('\n');
+}
+
+function buildReplyMessage(c) {
+  return buildMessage(c, '[Migrated reply]', []).join('\n');
+}
+
+// Identifies a migrated comment by everything the plugin wrote into it except the
+// final Location line, which changes if frames are fixed between runs.
+// Comments that don't start with a migration label get null.
+function fingerprint(message) {
+  var lines = String(message || '').replace(/\r\n?/g, '\n').trim().split('\n')
+    .map(function (l) { return l.replace(/\s+$/, ''); });
+  if (!MARKERS[lines[0]]) return null;
+  if (lines.length > 2 && lines[lines.length - 1].indexOf('Location: ') === 0) lines.pop();
+  return lines.join('\n');
+}
+
+// Pair each planned comment with at most one existing copy, by fingerprint. Identical
+// comments pair one-to-one, so two identical "+1" replies need two copies. Replies take
+// a copy under their thread's copy first, then any leftover with the same fingerprint.
+function matchCopies(threads, comments) {
+  var pool = {};
+  (comments || []).forEach(function (c) {
+    var f = fingerprint(c.message);
+    if (f) (pool[f] = pool[f] || []).push(c);
+  });
+  function take(message, accept) {
+    var list = pool[fingerprint(message)] || [];
+    for (var i = 0; i < list.length; i++) if (accept(list[i])) return list.splice(i, 1)[0];
+    return null;
+  }
+  var copies = {};
+  threads.forEach(function (t) {
+    copies[t.sourceId] = take(t.message, function (c) { return !c.parent_id; }) ||
+      take(t.message, function () { return true; });
+  });
+  [true, false].forEach(function (underRoot) {
+    threads.forEach(function (t) {
+      var root = copies[t.sourceId];
+      t.replies.forEach(function (r) {
+        if (copies[r.sourceId]) return;
+        copies[r.sourceId] = take(r.message, function (c) { return !underRoot || (root && c.parent_id === root.id); });
+      });
+    });
+  });
+  return copies;
+}
+
+function byCreated(a, b) {
+  return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0;
+}
+
+// Rebuild the pin position for the target file. Only the documented fields are
+// sent back. A pin whose frame can't be found falls back to the frame's old
+// absolute position, and the comment text records where it used to be.
+function transformMeta(meta, nodeMap, locators) {
+  if (!meta) return { meta: undefined, location: null };
+  var hasRegion = meta.region_width != null && meta.region_height != null;
+  var region = hasRegion ? { region_width: meta.region_width, region_height: meta.region_height } : {};
+  if (hasRegion && meta.comment_pin_corner) region.comment_pin_corner = meta.comment_pin_corner;
+
+  if (meta.node_id) {
+    var offset = meta.node_offset || { x: 0, y: 0 };
+    var newId = nodeMap[meta.node_id];
+    if (newId) {
+      return { meta: Object.assign({ node_id: newId, node_offset: { x: offset.x, y: offset.y } }, region), location: null };
+    }
+    var loc = locators && locators[meta.node_id];
+    var where = loc ? [loc.page].concat(loc.path).filter(Boolean).join(' › ') : 'unknown frame';
+    var base = loc && loc.abs ? loc.abs : { x: 0, y: 0 };
+    return { meta: Object.assign({ x: base.x + offset.x, y: base.y + offset.y }, region), location: where };
+  }
+  return { meta: Object.assign({ x: meta.x, y: meta.y }, region), location: null };
+}
+
+// Turn an export file plus the target file's current comments into an ordered
+// list of posts. Comments already present (matched by fingerprint) are marked done.
+// options.skipResolved leaves out resolved threads and their replies.
+function buildPlan(exportData, existingComments, nodeMap, options) {
+  var comments = exportData.comments.slice();
+  var ids = {};
+  comments.forEach(function (c) { ids[c.id] = true; });
+
+  // A reply whose parent is missing from the export is posted as its own thread.
+  var roots = comments.filter(function (c) { return !c.parent_id || !ids[c.parent_id]; }).sort(byCreated);
+  var repliesByRoot = {};
+  comments.forEach(function (c) {
+    if (c.parent_id && ids[c.parent_id]) (repliesByRoot[c.parent_id] = repliesByRoot[c.parent_id] || []).push(c);
+  });
+
+  var plan = { threads: [], counts: { roots: 0, replies: 0, done: 0, toPost: 0, resolved: 0, unmatched: 0, skipped: 0 } };
+  roots.forEach(function (root) {
+    if (options && options.skipResolved && root.resolved_at) {
+      plan.counts.skipped += 1 + (repliesByRoot[root.id] || []).length;
+      return;
+    }
+    var t = transformMeta(root.client_meta, nodeMap, exportData.locators);
+    plan.threads.push({
+      sourceId: root.id,
+      existingId: null,
+      message: buildRootMessage(root, t.location),
+      client_meta: t.meta,
+      unmatched: !!t.location,
+      resolved: !!root.resolved_at,
+      replies: (repliesByRoot[root.id] || []).sort(byCreated).map(function (r) {
+        return { sourceId: r.id, existingId: null, message: buildReplyMessage(r) };
+      })
+    });
+  });
+
+  var copies = matchCopies(plan.threads, existingComments);
+  var matched = {};
+  Object.keys(copies).forEach(function (id) { if (copies[id]) matched[copies[id].id] = true; });
+  // Comments with a migration label that match nothing in this export: a re-run may duplicate them.
+  plan.counts.unrecognized = (existingComments || []).filter(function (c) {
+    return fingerprint(c.message) && !matched[c.id];
+  }).length;
+  plan.threads.forEach(function (thread) {
+    thread.existingId = copies[thread.sourceId] ? copies[thread.sourceId].id : null;
+    plan.counts.roots++;
+    if (thread.resolved) plan.counts.resolved++;
+    if (thread.unmatched) plan.counts.unmatched++;
+    if (thread.existingId) plan.counts.done++; else plan.counts.toPost++;
+    thread.replies.forEach(function (r) {
+      r.existingId = copies[r.sourceId] ? copies[r.sourceId].id : null;
+      plan.counts.replies++;
+      if (r.existingId) plan.counts.done++; else plan.counts.toPost++;
+    });
+  });
+  return plan;
+}
+
+// Check the target file after import: every source comment has a copy, and
+// every copied reply sits under the copy of its original thread.
+function verifyImport(plan, targetComments) {
+  var copies = matchCopies(plan.threads, targetComments);
+  var missing = [];
+  var misplaced = [];
+  plan.threads.forEach(function (t) {
+    var root = copies[t.sourceId];
+    if (!root) missing.push(t.sourceId);
+    t.replies.forEach(function (r) {
+      var copy = copies[r.sourceId];
+      if (!copy) missing.push(r.sourceId);
+      else if (root && copy.parent_id !== root.id) misplaced.push(r.sourceId);
+    });
+  });
+  return { missing: missing, misplaced: misplaced };
+}
+
+// Posts that Figma saved with different text than was sent. The plugin can't
+// recognize those as migrated, so running Import again would post them twice.
+function findAltered(sent, targetComments) {
+  var byId = {};
+  (targetComments || []).forEach(function (c) { byId[c.id] = c; });
+  return sent.filter(function (s) {
+    return byId[s.id] && fingerprint(byId[s.id].message) !== fingerprint(s.message);
+  }).map(function (s) { return { id: s.id, sourceId: s.sourceId, sent: s.message, saved: byId[s.id].message }; });
+}
+
+// "45 seconds", "3 minutes", "2 hours", "3 days"
+function formatWait(seconds) {
+  var units = [[86400 * 1.5, 86400, 'day'], [5400, 3600, 'hour'], [90, 60, 'minute'], [0, 1, 'second']];
+  for (var i = 0; i < units.length; i++) {
+    if (seconds >= units[i][0]) {
+      var n = Math.max(1, Math.round(seconds / units[i][1]));
+      return n + ' ' + units[i][2] + (n === 1 ? '' : 's');
+    }
+  }
+}
+
+function commentNodeIds(comments) {
+  var seen = {};
+  comments.forEach(function (c) {
+    if (c.client_meta && c.client_meta.node_id) seen[c.client_meta.node_id] = true;
+  });
+  return Object.keys(seen);
+}
+
+// Compares the linked file's comments with the open file. If no pinned frame at all
+// is in the open file, the link is for a different file. Otherwise missing frames were
+// deleted over time (common in long-lived files), and the threads on them are counted.
+function checkOpenFile(comments, locators) {
+  var ids = commentNodeIds(comments);
+  var found = ids.filter(function (id) { return locators[id]; }).length;
+  var threadsWithoutFrame = comments.filter(function (c) {
+    return !c.parent_id && c.client_meta && c.client_meta.node_id && !locators[c.client_meta.node_id];
+  }).length;
+  return { wrongFile: ids.length > 0 && found === 0, threadsWithoutFrame: threadsWithoutFrame };
+}
+
+function safeFileName(name) {
+  return (String(name || 'figma-file').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'figma-file') + ' - comments.json';
+}
+// END LOGIC
+
+// ---------- Plugin bridge ----------
+var nextRequest = 1;
+var pending = {};
+var tokens = {};
+var fileName = '';
+var lastExport = null;
+var importData = null;
+var importPlan = null;
+var importTarget = null;
+
+function send(msg) { parent.postMessage({ pluginMessage: msg }, '*'); }
+
+function ask(type, payload) {
+  return new Promise(function (resolve, reject) {
+    var id = nextRequest++;
+    pending[id] = { resolve: resolve, reject: reject };
+    send(Object.assign({ type: type, requestId: id }, payload));
+  });
+}
+
+window.onmessage = function (event) {
+  var msg = event.data && event.data.pluginMessage;
+  if (!msg) return;
+  if (msg.type === 'init') {
+    tokens = msg.tokens || {};
+    fileName = msg.fileName;
+    showWelcome(!msg.welcomeHidden);
+  } else if (msg.type === 'response' && pending[msg.requestId]) {
+    var p = pending[msg.requestId];
+    delete pending[msg.requestId];
+    if (msg.error) p.reject(new Error(msg.error)); else p.resolve(msg.result);
+  }
+};
+
+// ---------- REST ----------
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function friendlyError(status, detail, apiHost, method) {
+  var scope = method === 'POST' ? 'file_comments:write' : 'file_comments:read';
+  if (status === 403) return 'Figma refused the request (403). Check that the token was made in ' + envLabel(apiHost) +
+    ', has not expired, has the scope ' + scope + ', and that you can open this file.';
+  if (status === 404) return 'File not found (404). Check the link.';
+  if (status === 400) return 'Figma rejected the request (400): ' + detail;
+  return 'Figma returned ' + status + ': ' + detail;
+}
+
+// Figma's comment endpoints allow 25 to 100 requests a minute for Full and Dev seats,
+// and about 5 for View and Collab seats. Posts start at 40 a minute, and every 429
+// halves that, down to 5 a minute, for the rest of the session.
+var pacing = { interval: 1500, next: 0 };
+var MAX_WAIT_SECONDS = 300;
+var BACKOFF_SECONDS = [15, 30, 60, 60, 60, 60];
+var SEAT_NOTE = 'Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit. ' +
+  'Try again later, or have someone with a Full or Dev seat do this step.';
+
+async function pace() {
+  var wait = pacing.next - Date.now();
+  if (wait > 0) await sleep(wait);
+  pacing.next = Date.now() + pacing.interval;
+}
+
+function postsPerMinute() { return Math.round(60000 / pacing.interval); }
+
+// onWait(seconds), if given, is called before sleeping on a rate limit, so the status can say so.
+async function api(apiHost, token, method, path, body, onWait) {
+  for (var attempt = 0; attempt < BACKOFF_SECONDS.length; attempt++) {
+    var res;
+    try {
+      res = await fetch(apiHost + path, {
+        method: method,
+        headers: Object.assign({ 'X-Figma-Token': token }, body ? { 'Content-Type': 'application/json' } : {}),
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch (err) {
+      var e = new Error('Could not reach ' + apiHost + '. Check your connection. In Figma for Government, ' +
+        'the network or browser may be blocking this plugin from calling the API; see the README.');
+      e.fatal = true;
+      throw e;
+    }
+    if (res.status === 429) {
+      // Retry-After is often unreadable from a plugin (CORS), so there's a fallback schedule.
+      var retry = Number(res.headers.get('Retry-After'));
+      if (retry > MAX_WAIT_SECONDS) {
+        var long = new Error('Figma asked to wait ' + formatWait(retry) + ' before it takes more requests from this account. ' + SEAT_NOTE);
+        long.fatal = true;
+        throw long;
+      }
+      pacing.interval = Math.min(pacing.interval * 2, 12000);
+      var wait = retry > 0 ? retry : BACKOFF_SECONDS[attempt];
+      if (onWait) onWait(wait);
+      await sleep(wait * 1000);
+      continue;
+    }
+    var text = await res.text();
+    var data;
+    try { data = JSON.parse(text); } catch (_) { data = { err: text }; }
+    if (!res.ok) {
+      var error = new Error(friendlyError(res.status, data.err || data.message || text, apiHost, method));
+      error.status = res.status;
+      error.fatal = res.status === 401 || res.status === 403 || res.status === 404;
+      throw error;
+    }
+    return data;
+  }
+  var limited = new Error('Figma kept limiting the requests, even after waiting. ' + SEAT_NOTE);
+  limited.fatal = true;
+  throw limited;
+}
+
+// ---------- UI helpers ----------
+var $ = function (id) { return document.getElementById(id); };
+
+// The welcome screen replaces the tabs until Continue is clicked.
+function showWelcome(show) {
+  $('panel-welcome').hidden = !show;
+  $('tabs').hidden = show;
+  if (show) {
+    $('welcome-hide').checked = true;
+    $('panel-export').hidden = true;
+    $('panel-import').hidden = true;
+  } else {
+    showTab(currentTab);
+  }
+  // The welcome screen is short, so fit the window to it; the tabs use the default height.
+  requestAnimationFrame(function () {
+    send({ type: 'resize', height: show ? Math.ceil(document.body.getBoundingClientRect().height) : null });
+  });
+}
+
+var currentTab = 'export';
+function showTab(mode) {
+  currentTab = mode;
+  var isImport = mode === 'import';
+  $('tab-export').setAttribute('aria-selected', String(!isImport));
+  $('tab-import').setAttribute('aria-selected', String(isImport));
+  $('panel-export').hidden = isImport;
+  $('panel-import').hidden = !isImport;
+}
+
+var UNMATCHED_NOTE = 'Some comments were pinned to frames that this file doesn\u2019t have, usually because ' +
+  'a frame was renamed, moved, or deleted after the comment was made. Those comments are still migrated: each is ' +
+  'placed near its old position, and its text says which frame it was on.';
+
+// Static, trusted markup. Filled shapes use currentColor; the marks inside are white.
+var ICONS = {
+  success: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"/>' +
+    '<path d="M4.6 8.3l2.2 2.2 4.6-4.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warning: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.13 1.5a1 1 0 0 1 1.74 0l6.95 12.5A1 1 0 0 1 14.95 15.5H1.05a1 1 0 0 1-.87-1.5z" fill="currentColor"/>' +
+    '<path d="M8 5.8v4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="12.6" r="1" fill="#fff"/></svg>',
+  error: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"/>' +
+    '<path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  info: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"/>' +
+    '<path d="M8 7.2v4.3" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="4.7" r="1" fill="#fff"/></svg>',
+  progress: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="2"/>' +
+    '<path d="M8 1.5a6.5 6.5 0 0 1 6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+};
+
+// setStatus(id, 'Working…') shows a progress line.
+// setStatus(id, { kind, title, body, note }) shows an alert; kind is success, warning, error, or info.
+function setStatus(id, msg) {
+  if (typeof msg === 'string') msg = { kind: 'progress', body: msg };
+  var el = $(id);
+  el.innerHTML = '';
+  el.className = 'status ' + msg.kind;
+  var icon = document.createElement('span');
+  icon.className = 'status-icon';
+  icon.innerHTML = ICONS[msg.kind];
+  var text = document.createElement('div');
+  text.className = 'status-text';
+  [['status-title', msg.title, 'strong'], ['status-body', msg.body, 'div'], ['status-note', msg.note, 'div']]
+    .forEach(function (part) {
+      if (!part[1]) return;
+      var node = document.createElement(part[2]);
+      node.className = part[0];
+      node.textContent = part[1];
+      text.appendChild(node);
+    });
+  el.appendChild(icon);
+  el.appendChild(text);
+}
+
+// A status updater for api()'s onWait. `then` is what happens after the wait.
+function waitStatus(id, then) {
+  return function (seconds) {
+    setStatus(id, 'Figma is limiting requests, so waiting ' + formatWait(seconds) + ', then ' + then + '. Keep this window open.');
+  };
+}
+
+// Rows are [label, value]; a falsy row is left out.
+function renderSummary(id, rows) {
+  var table = $(id);
+  table.innerHTML = '';
+  rows = rows.filter(Boolean);
+  rows.forEach(function (row) {
+    var tr = document.createElement('tr');
+    var a = document.createElement('td');
+    var b = document.createElement('td');
+    a.textContent = row[0];
+    b.textContent = row[1];
+    tr.appendChild(a);
+    tr.appendChild(b);
+    table.appendChild(tr);
+  });
+  table.hidden = rows.length === 0;
+}
+
+// Prefill the token for whichever environment the pasted link points at.
+function wireToken(linkId, tokenId) {
+  $(linkId).addEventListener('input', function () {
+    var parsed = parseFileLink($(linkId).value);
+    if (parsed && !$(tokenId).value && tokens[parsed.apiHost]) $(tokenId).value = tokens[parsed.apiHost];
+  });
+}
+
+function rememberToken(apiHost, token, remember) {
+  tokens[apiHost] = remember ? token : '';
+  send({ type: 'save-token', host: apiHost, token: remember ? token : '' });
+}
+
+function readInputs(prefix) {
+  var link = parseFileLink($(prefix + '-link').value);
+  if (!link) throw new Error('Paste a link to this file. It should start with https://www.figma.com/design/ or https://www.figma-gov.com/design/.');
+  var token = $(prefix + '-token').value.trim();
+  if (!token) throw new Error('Paste a personal access token.');
+  return { link: link, token: token, remember: $(prefix + '-remember').checked };
+}
+
+function download(data) {
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = safeFileName(data.source.fileName);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+// ---------- Export ----------
+async function runExport() {
+  $('ex-run').disabled = true;
+  $('ex-summary').hidden = true;
+  try {
+    var input = readInputs('ex');
+    setStatus('ex-status', 'Reading comments…');
+    var res = await api(input.link.apiHost, input.token, 'GET', '/v1/files/' + input.link.key + '/comments', null,
+      waitStatus('ex-status', 'reading comments'));
+    rememberToken(input.link.apiHost, input.token, input.remember);
+    var comments = res.comments || [];
+
+    setStatus('ex-status', 'Recording where each comment is pinned…');
+    var nodeIds = commentNodeIds(comments);
+    var locators = await ask('locate', { ids: nodeIds });
+    var check = checkOpenFile(comments, locators);
+
+    lastExport = {
+      format: FORMAT,
+      exported_at: new Date().toISOString(),
+      source: { apiHost: input.link.apiHost, fileKey: input.link.key, fileName: fileName },
+      comments: comments,
+      locators: locators
+    };
+    download(lastExport);
+
+    var roots = comments.filter(function (c) { return !c.parent_id; });
+    renderSummary('ex-summary', [
+      ['Threads', roots.length],
+      ['Replies', comments.length - roots.length],
+      ['Resolved threads', roots.filter(function (c) { return c.resolved_at; }).length],
+      ['Pinned to frames', nodeIds.length]
+    ]);
+    $('ex-again').hidden = false;
+    if (check.wrongFile) {
+      setStatus('ex-status', { kind: 'warning', title: 'Check the link',
+        body: 'The comments were exported, but none of the frames they\u2019re pinned to are in the open file. ' +
+          'Make sure the link you pasted is for the file that\u2019s open right now, then export again.' });
+    } else {
+      var n = check.threadsWithoutFrame;
+      setStatus('ex-status', { kind: 'success', title: 'Export complete',
+        body: comments.length + ' comments were saved to \u201c' + safeFileName(fileName) + '\u201d.',
+        note: n ? n + (n === 1 ? ' thread is' : ' threads are') + ' pinned to frames that no longer exist in this file, ' +
+          'usually deleted after the thread was resolved. They\u2019re still exported, and on import they\u2019re ' +
+          'placed near the top-left of the canvas.' : '' });
+    }
+  } catch (err) {
+    setStatus('ex-status', { kind: 'error', title: 'Export failed', body: err.message });
+  } finally {
+    $('ex-run').disabled = false;
+  }
+}
+
+// ---------- Import ----------
+function readJsonFile(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try { resolve(JSON.parse(reader.result)); } catch (_) { reject(new Error('That file is not valid JSON.')); }
+    };
+    reader.onerror = function () { reject(new Error('Could not read that file.')); };
+    reader.readAsText(file);
+  });
+}
+
+async function runPreview() {
+  $('im-preview').disabled = true;
+  $('im-run').hidden = true;
+  $('im-summary').hidden = true;
+  importPlan = null;
+  try {
+    var input = readInputs('im');
+    var file = $('im-file').files[0];
+    if (!file) throw new Error('Choose the .json file that Export downloaded.');
+    importData = await readJsonFile(file);
+    if (importData.format !== FORMAT || !Array.isArray(importData.comments)) {
+      throw new Error('That file was not exported by Migrate Comments.');
+    }
+    if (importData.source.apiHost === input.link.apiHost && importData.source.fileKey === input.link.key) {
+      throw new Error('This is the same file the comments were exported from. Open the file you\u2019re migrating TO and use the Import tab there.');
+    }
+
+    setStatus('im-status', 'Checking comments already in this file…');
+    var existing = await api(input.link.apiHost, input.token, 'GET', '/v1/files/' + input.link.key + '/comments', null,
+      waitStatus('im-status', 'checking comments'));
+    rememberToken(input.link.apiHost, input.token, input.remember);
+
+    // Pins are matched in the open file but posted to the linked one, so they must be the same file.
+    var targetIds = commentNodeIds(existing.comments || []);
+    if (targetIds.length) {
+      var here = await ask('locate', { ids: targetIds });
+      if (checkOpenFile(existing.comments, here).wrongFile) {
+        var wrong = new Error('The file in the link has comments pinned to frames that aren’t in the open file, ' +
+          'so the link is probably for a different file. Copy the link of the file that’s open right now, then click Preview again.');
+        wrong.title = 'Check the link';
+        wrong.kind = 'warning';
+        throw wrong;
+      }
+    }
+
+    setStatus('im-status', 'Matching pinned frames…');
+    var wanted = {};
+    var locators = importData.locators || {};
+    commentNodeIds(importData.comments).forEach(function (id) { wanted[id] = locators[id] || null; });
+    var nodeMap = await ask('resolve', { locators: wanted });
+
+    importTarget = input;
+    importPlan = buildPlan(importData, existing.comments || [], nodeMap, { skipResolved: $('im-skip-resolved').checked });
+    var c = importPlan.counts;
+    renderSummary('im-summary', [
+      ['From', importData.source.fileName + ' (' + envLabel(importData.source.apiHost) + ')'],
+      ['Threads', c.roots],
+      ['Replies', c.replies],
+      c.skipped ? ['Skipped: resolved threads and their replies', c.skipped] : ['Resolved threads (noted in text)', c.resolved],
+      ['Already migrated (will skip)', c.done],
+      c.unrecognized ? ['Migrated earlier, not recognized', c.unrecognized] : null,
+      ['Pins that could not be matched', c.unmatched],
+      ['Comments to post now', c.toPost]
+    ]);
+    var minutes = Math.max(1, Math.ceil(c.toPost * pacing.interval / 60000));
+    var timing = 'They’ll be posted under your name, about ' + postsPerMinute() + ' a minute, so this takes about ' +
+      minutes + (minutes === 1 ? ' minute' : ' minutes') + '. Keep this window open while posting.';
+    if (c.toPost === 0 && c.done === 0 && c.skipped) {
+      setStatus('im-status', { kind: 'success', title: 'Nothing to post',
+        body: 'Every thread is resolved, and resolved threads are being skipped.' });
+    } else if (c.toPost === 0) {
+      setStatus('im-status', { kind: 'success', title: 'Already up to date',
+        body: 'Every comment has already been migrated to this file.' });
+    } else if (c.unrecognized) {
+      setStatus('im-status', { kind: 'warning', title: 'Check before posting',
+        body: (c.unrecognized === 1
+          ? 'This file has 1 migrated comment that doesn\u2019t match this export file. If it came from the same original file, ' +
+            'posting now would duplicate it. That happens when the export file is newer than the one used before, ' +
+            'or when Figma changed its text. Post only if it came from a different file.'
+          : 'This file has ' + c.unrecognized + ' migrated comments that don\u2019t match this export file. If they came from ' +
+            'the same original file, posting now would duplicate them. That happens when the export file is newer than ' +
+            'the one used before, or when Figma changed their text. Post only if they came from a different file.'),
+        note: timing + (c.unmatched ? '\n\n' + UNMATCHED_NOTE : '') });
+      $('im-run').hidden = false;
+    } else {
+      setStatus('im-status', { kind: 'info', title: 'Ready to post ' + c.toPost + (c.toPost === 1 ? ' comment' : ' comments'),
+        body: timing + ' Review the numbers, then click Post comments.',
+        note: c.unmatched ? UNMATCHED_NOTE : '' });
+      $('im-run').hidden = false;
+    }
+  } catch (err) {
+    setStatus('im-status', { kind: err.kind || 'error', title: err.title || 'Preview failed', body: err.message });
+  } finally {
+    $('im-preview').disabled = false;
+  }
+}
+
+// Locked while posting, so the posts match what Preview showed.
+var IMPORT_INPUTS = ['im-link', 'im-token', 'im-file', 'im-skip-resolved'];
+function lockImportInputs(locked) {
+  IMPORT_INPUTS.forEach(function (id) { $(id).disabled = locked; });
+}
+
+async function runImport() {
+  var plan = importPlan;
+  var target = importTarget;
+  var path = '/v1/files/' + target.link.key + '/comments';
+  var total = plan.counts.toPost;
+  var posted = 0;
+  var failed = 0;
+  var sent = [];
+  var bar = $('im-bar');
+  $('im-run').disabled = true;
+  $('im-preview').disabled = true;
+  lockImportInputs(true);
+  bar.hidden = false;
+
+  function tick() {
+    bar.firstElementChild.style.width = Math.round((posted + failed) / Math.max(total, 1) * 100) + '%';
+    setStatus('im-status', 'Posting ' + (posted + failed) + ' of ' + total + '\u2026 Keep this window open.');
+  }
+  var onWait = waitStatus('im-status', 'posting');
+
+  // Paced to stay under Figma's rate limit. Keeps what was sent, to compare with what Figma saved.
+  async function post(sourceId, body) {
+    await pace();
+    var created = await api(target.link.apiHost, target.token, 'POST', path, body, onWait);
+    sent.push({ id: created.id, sourceId: sourceId, message: body.message });
+    posted++;
+    return created.id;
+  }
+
+  try {
+    for (var i = 0; i < plan.threads.length; i++) {
+      var t = plan.threads[i];
+      var rootId = t.existingId;
+      if (!rootId) {
+        try {
+          var body = { message: t.message };
+          if (t.client_meta) body.client_meta = t.client_meta;
+          rootId = await post(t.sourceId, body);
+        } catch (err) {
+          if (err.fatal) throw err;
+          // Details stay in the plugin console; the window only shows counts.
+          console.warn('Thread ' + t.sourceId + ' failed: ' + err.message);
+          failed += 1 + t.replies.filter(function (r) { return !r.existingId; }).length;
+          tick();
+          continue;
+        }
+        tick();
+      }
+      for (var j = 0; j < t.replies.length; j++) {
+        var r = t.replies[j];
+        if (r.existingId) continue;
+        try {
+          await post(r.sourceId, { message: r.message, comment_id: rootId });
+        } catch (err) {
+          if (err.fatal) throw err;
+          console.warn('Reply ' + r.sourceId + ' failed: ' + err.message);
+          failed++;
+        }
+        tick();
+      }
+    }
+
+    setStatus('im-status', 'Checking the result\u2026');
+    var after = await api(target.link.apiHost, target.token, 'GET', path, null, waitStatus('im-status', 'checking the result'));
+    var check = verifyImport(plan, after.comments || []);
+    var altered = findAltered(sent, after.comments || []);
+    // A post whose text Figma changed is in the file, so it isn't counted as missing.
+    var changed = {};
+    altered.forEach(function (a) { changed[a.sourceId] = true; });
+    var missing = check.missing.filter(function (id) { return !changed[id]; });
+    var ok = failed === 0 && missing.length === 0 && check.misplaced.length === 0;
+    renderSummary('im-summary', [
+      ['Posted now', posted],
+      ['Already there before', plan.counts.done],
+      ['Failed', failed],
+      altered.length ? ['Text changed by Figma', altered.length] : null,
+      ['Missing after check', missing.length],
+      ['Replies under the wrong thread', check.misplaced.length]
+    ]);
+    if (altered.length) {
+      altered.slice(0, 3).forEach(function (a) {
+        console.warn('Figma changed comment ' + a.id + '.\n--- sent ---\n' + a.sent + '\n--- saved ---\n' + a.saved);
+      });
+      setStatus('im-status', { kind: 'error', title: 'Don\u2019t run Import again on this file',
+        body: 'Figma saved ' + altered.length + (altered.length === 1 ? ' comment' : ' comments') + ' with different text ' +
+          'from what the plugin sent, so the plugin can\u2019t recognize ' + (altered.length === 1 ? 'it' : 'them') +
+          ' as migrated. Running Import again would post ' + (altered.length === 1 ? 'it' : 'them') + ' a second time.',
+        note: 'The comments are in the file; check that they read correctly. Examples of the change are in the plugin\u2019s developer console.' });
+    } else {
+      setStatus('im-status', ok
+        ? { kind: 'success', title: 'Import complete',
+            body: 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.',
+            note: plan.counts.skipped ? 'Resolved threads were skipped.' : '' }
+        : { kind: 'warning', title: 'Finished with problems',
+            body: 'Some comments didn\u2019t make it into this file. This is usually a brief network or Figma hiccup. ' +
+              'Click Preview, then Post comments again; comments already migrated are skipped.',
+            note: check.misplaced.length ? 'Some replies ended up under the wrong thread. A re-run won\u2019t move them, ' +
+              'so check those threads by hand.' : '' });
+    }
+  } catch (err) {
+    setStatus('im-status', { kind: 'error', title: 'Import stopped', body: err.message,
+      note: 'Posted ' + posted + ' before stopping. Click Preview, then Post comments again to continue.' });
+  } finally {
+    // The plan is used up: what's in the file changed, so a re-run needs a fresh Preview.
+    importPlan = null;
+    $('im-run').hidden = true;
+    bar.hidden = true;
+    $('im-run').disabled = false;
+    $('im-preview').disabled = false;
+    lockImportInputs(false);
+  }
+}
+
+// ---------- Wire up ----------
+$('welcome-continue').onclick = function () {
+  send({ type: 'save-welcome', hide: $('welcome-hide').checked });
+  showWelcome(false);
+};
+document.querySelectorAll('.token-guide').forEach(function (b) { b.onclick = function () { showWelcome(true); }; });
+$('tab-export').onclick = function () { showTab('export'); };
+$('tab-import').onclick = function () { showTab('import'); };
+// Post uses what Preview checked, so any later change to these asks for a fresh preview.
+IMPORT_INPUTS.forEach(function (id) {
+  $(id).addEventListener(id === 'im-link' || id === 'im-token' ? 'input' : 'change', function () {
+    if (!importPlan) return;
+    importPlan = null;
+    $('im-run').hidden = true;
+    $('im-summary').hidden = true;
+    setStatus('im-status', { kind: 'info', body: 'Something changed since Preview. Click Preview again to update the numbers.' });
+  });
+});
+$('ex-run').onclick = runExport;
+$('ex-again').onclick = function () { if (lastExport) download(lastExport); };
+$('im-preview').onclick = runPreview;
+$('im-run').onclick = runImport;
+wireToken('ex-link', 'ex-token');
+wireToken('im-link', 'im-token');
+</script>
