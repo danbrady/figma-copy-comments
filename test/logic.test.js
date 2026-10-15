@@ -143,7 +143,7 @@ test('buildPlan orders threads and replies, counts, and skips already-copied com
   const plan = L.buildPlan(data, [], { '1:2': '1:2' });
   assert.deepEqual(plain(plan.threads.map((t) => t.sourceId)), ['10', '20', '40']);
   assert.deepEqual(plain(plan.threads[0].replies.map((r) => r.sourceId)), ['11', '30']);
-  assert.deepEqual({ ...plan.counts }, { roots: 3, replies: 2, done: 0, toPost: 5, resolved: 1, unmatched: 0, skipped: 0, misplaced: 0, unrecognized: 0 });
+  assert.deepEqual({ ...plan.counts }, { roots: 3, replies: 2, done: 0, toPost: 5, resolved: 1, unmatched: 0, skipped: 0, skippedDeleted: 0, misplaced: 0, unrecognized: 0 });
 
   const existing = [
     { id: 'new10', message: plan.threads[0].message },
@@ -187,7 +187,7 @@ test('buildPlan can skip resolved threads with their replies', () => {
   data.comments.push({ id: '21', parent_id: '20', user: user('A'), created_at: '2026-01-03T00:00:00Z', message: 'ok', reactions: [] });
   const plan = L.buildPlan(data, [], { '1:2': null }, { skipResolved: true });
   assert.deepEqual(plain(plan.threads.map((t) => t.sourceId)), ['10', '40']);
-  assert.deepEqual({ ...plan.counts }, { roots: 2, replies: 2, done: 0, toPost: 4, resolved: 0, unmatched: 0, skipped: 2, misplaced: 0, unrecognized: 0 });
+  assert.deepEqual({ ...plan.counts }, { roots: 2, replies: 2, done: 0, toPost: 4, resolved: 0, unmatched: 0, skipped: 2, skippedDeleted: 0, misplaced: 0, unrecognized: 0 });
   // Nothing skipped means the "Done" check doesn't expect the resolved thread either.
   assert.deepEqual(plain(L.verifyImport(plan, plan.threads.flatMap((t, i) =>
     [{ id: 'r' + i, message: t.message }].concat(t.replies.map((r, j) => ({ id: 'r' + i + j, parent_id: 'r' + i, message: r.message })))))),
@@ -197,6 +197,32 @@ test('buildPlan can skip resolved threads with their replies', () => {
   assert.equal(all.counts.skipped, 0);
   assert.equal(all.counts.resolved, 1);
   assert.equal(all.counts.unmatched, 1);
+});
+
+test('buildPlan can skip threads whose frame was deleted before export', () => {
+  const data = sampleExport();
+  // Thread 50 was pinned to a frame that was already gone at export (null locator), with one reply.
+  data.locators['9:9'] = null;
+  data.comments.push(
+    { id: '50', user: user('E'), created_at: '2026-01-06T00:00:00Z', message: 'old frame', client_meta: { node_id: '9:9', node_offset: { x: 2, y: 2 } }, reactions: [] },
+    { id: '51', parent_id: '50', user: user('F'), created_at: '2026-01-06T01:00:00Z', message: 'yes', reactions: [] });
+
+  const kept = L.buildPlan(data, [], { '1:2': '1:2', '9:9': null });
+  assert.ok(kept.threads.some((t) => t.sourceId === '50'));
+  assert.equal(kept.counts.skippedDeleted, 0);
+
+  const plan = L.buildPlan(data, [], { '1:2': '1:2', '9:9': null }, { skipDeletedFrames: true });
+  assert.deepEqual(plain(plan.threads.map((t) => t.sourceId)), ['10', '20', '40']);
+  assert.equal(plan.counts.skippedDeleted, 2);
+  // A frame that existed at export but isn't found in the target isn't "deleted": thread 20 stays.
+  const missingHere = L.buildPlan(data, [], { '1:2': null, '9:9': null }, { skipDeletedFrames: true });
+  assert.ok(missingHere.threads.some((t) => t.sourceId === '20'));
+
+  // With both options, a resolved thread on a deleted frame counts once, as resolved.
+  data.comments.find((c) => c.id === '50').resolved_at = '2026-01-07T00:00:00Z';
+  const both = L.buildPlan(data, [], { '1:2': '1:2', '9:9': null }, { skipResolved: true, skipDeletedFrames: true });
+  assert.equal(both.counts.skipped, 3);
+  assert.equal(both.counts.skippedDeleted, 0);
 });
 
 test('verifyImport finds missing and misplaced copies', () => {
