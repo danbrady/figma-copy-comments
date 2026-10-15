@@ -202,6 +202,11 @@
       so copied threads always show as open. A thread that was resolved says
       <strong>✅ Resolved</strong> and when in its text.</div>
   </div>
+  <div class="step">
+    <label class="check"><input type="checkbox" id="im-skip-deleted"> Skip threads whose frame was deleted</label>
+    <div class="hint">Leaves out threads pinned to frames that were already deleted when the comments were
+      exported, and their replies. Otherwise they're placed near the top-left of the canvas.</div>
+  </div>
   <button class="secondary" id="im-preview">Preview</button>
   <button class="primary" id="im-run" hidden>Post comments</button>
   <div class="bar" id="im-bar" hidden><div></div></div>
@@ -374,7 +379,8 @@ function transformMeta(meta, nodeMap, locators) {
 
 // Turn an export file plus the target file's current comments into an ordered
 // list of posts. Comments already present (matched by fingerprint) are marked done.
-// options.skipResolved leaves out resolved threads and their replies.
+// options.skipResolved leaves out resolved threads and their replies, and
+// options.skipDeletedFrames leaves out threads whose frame was gone at export.
 function buildPlan(exportData, existingComments, nodeMap, options) {
   var comments = exportData.comments.slice();
   var ids = {};
@@ -387,10 +393,14 @@ function buildPlan(exportData, existingComments, nodeMap, options) {
     if (c.parent_id && ids[c.parent_id]) (repliesByRoot[c.parent_id] = repliesByRoot[c.parent_id] || []).push(c);
   });
 
-  var plan = { threads: [], misplaced: [], counts: { roots: 0, replies: 0, done: 0, toPost: 0, resolved: 0, unmatched: 0, skipped: 0, misplaced: 0 } };
+  var plan = { threads: [], misplaced: [], counts: { roots: 0, replies: 0, done: 0, toPost: 0, resolved: 0, unmatched: 0, skipped: 0, skippedDeleted: 0, misplaced: 0 } };
   roots.forEach(function (root) {
     if (options && options.skipResolved && root.resolved_at) {
       plan.counts.skipped += 1 + (repliesByRoot[root.id] || []).length;
+      return;
+    }
+    if (options && options.skipDeletedFrames && frameDeleted(root, exportData.locators)) {
+      plan.counts.skippedDeleted += 1 + (repliesByRoot[root.id] || []).length;
       return;
     }
     var t = transformMeta(root.client_meta, nodeMap, exportData.locators);
@@ -487,12 +497,14 @@ function commentNodeIds(comments) {
 // Compares the linked file's comments with the open file. If no pinned frame at all
 // is in the open file, the link is for a different file. Otherwise missing frames were
 // deleted over time (common in long-lived files), and the threads on them are counted.
+function frameDeleted(comment, locators) {
+  return !!(comment.client_meta && comment.client_meta.node_id && locators && !locators[comment.client_meta.node_id]);
+}
+
 function checkOpenFile(comments, locators) {
   var ids = commentNodeIds(comments);
   var found = ids.filter(function (id) { return locators[id]; }).length;
-  var threadsWithoutFrame = comments.filter(function (c) {
-    return !c.parent_id && c.client_meta && c.client_meta.node_id && !locators[c.client_meta.node_id];
-  }).length;
+  var threadsWithoutFrame = comments.filter(function (c) { return !c.parent_id && frameDeleted(c, locators); }).length;
   return { wrongFile: ids.length > 0 && found === 0, threadsWithoutFrame: threadsWithoutFrame };
 }
 
@@ -806,7 +818,7 @@ async function runExport() {
         body: comments.length + ' comments were saved to \u201c' + safeFileName(fileName) + '\u201d.',
         note: n ? n + (n === 1 ? ' thread is' : ' threads are') + ' pinned to frames that no longer exist in this file, ' +
           'usually deleted after the thread was resolved. They\u2019re still exported, and on import they\u2019re ' +
-          'placed near the top-left of the canvas.' : '' });
+          'placed near the top-left of the canvas unless you tick Skip threads whose frame was deleted.' : '' });
     }
   } catch (err) {
     setStatus('ex-status', { kind: 'error', title: 'Export failed', body: err.message });
@@ -869,13 +881,15 @@ async function runPreview() {
     var nodeMap = await ask('resolve', { locators: wanted });
 
     importTarget = input;
-    importPlan = buildPlan(importData, existing.comments || [], nodeMap, { skipResolved: $('im-skip-resolved').checked });
+    importPlan = buildPlan(importData, existing.comments || [], nodeMap,
+      { skipResolved: $('im-skip-resolved').checked, skipDeletedFrames: $('im-skip-deleted').checked });
     var c = importPlan.counts;
     renderSummary('im-summary', [
       ['From', importData.source.fileName + ' (' + envLabel(importData.source.apiHost) + ')'],
       ['Threads', c.roots],
       ['Replies', c.replies],
       c.skipped ? ['Skipped: resolved threads and their replies', c.skipped] : ['Resolved threads (noted in text)', c.resolved],
+      c.skippedDeleted ? ['Skipped: threads on deleted frames and their replies', c.skippedDeleted] : null,
       ['Already copied (will skip)', c.done],
       c.unrecognized ? ['Copied earlier, not recognized', c.unrecognized] : null,
       c.misplaced ? ['Replies under the wrong thread', c.misplaced] : null,
@@ -887,9 +901,9 @@ async function runPreview() {
     var minutes = Math.max(1, Math.ceil(c.toPost * pacing.interval / 60000));
     var timing = 'They’ll be posted under your name, about ' + postsPerMinute() + ' a minute, so this takes about ' +
       minutes + (minutes === 1 ? ' minute' : ' minutes') + '. Keep this window open while posting.';
-    if (c.toPost === 0 && c.done === 0 && c.skipped) {
+    if (c.toPost === 0 && c.done === 0 && (c.skipped || c.skippedDeleted)) {
       setStatus('im-status', { kind: 'success', title: 'Nothing to post',
-        body: 'Every thread is resolved, and resolved threads are being skipped.' });
+        body: 'Every thread is left out by the skip options above.' });
     } else if (c.toPost === 0 && c.misplaced) {
       setStatus('im-status', { kind: 'warning', title: 'Some replies are in the wrong thread',
         body: 'Every comment is in this file. ' + misplacedNote });
@@ -921,7 +935,7 @@ async function runPreview() {
 }
 
 // Locked while posting, so the posts match what Preview showed.
-var IMPORT_INPUTS = ['im-link', 'im-token', 'im-file', 'im-skip-resolved'];
+var IMPORT_INPUTS = ['im-link', 'im-token', 'im-file', 'im-skip-resolved', 'im-skip-deleted'];
 function lockImportInputs(locked) {
   IMPORT_INPUTS.forEach(function (id) { $(id).disabled = locked; });
 }
@@ -1057,8 +1071,11 @@ async function runImport() {
         note: 'The comments are in the file; check that they read correctly. Examples of the change are in the plugin\u2019s developer console.' });
     } else if (ok) {
       setStatus('im-status', { kind: 'success', title: 'Import complete',
-        body: 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.',
-        note: [plan.counts.skipped ? 'Resolved threads were skipped.' : '', recoveredNote, changedNote].filter(Boolean).join('\n\n') });
+        body: (plan.counts.roots + plan.counts.replies === 1 ? 'The comment is in this file.'
+          : 'All ' + (plan.counts.roots + plan.counts.replies) + ' comments are in this file, and every reply is in the right thread.'),
+        note: [plan.counts.skipped ? 'Resolved threads were skipped.' : '',
+          plan.counts.skippedDeleted ? 'Threads on deleted frames were skipped.' : '',
+          recoveredNote, changedNote].filter(Boolean).join('\n\n') });
     } else {
       setStatus('im-status', { kind: 'warning', title: 'Finished with problems',
         body: [
