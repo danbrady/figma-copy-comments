@@ -141,7 +141,7 @@ test('buildPlan orders threads and replies, counts, and skips already-copied com
   const plan = L.buildPlan(data, [], { '1:2': '1:2' });
   assert.deepEqual(plain(plan.threads.map((t) => t.sourceId)), ['10', '20', '40']);
   assert.deepEqual(plain(plan.threads[0].replies.map((r) => r.sourceId)), ['11', '30']);
-  assert.deepEqual({ ...plan.counts }, { roots: 3, replies: 2, done: 0, toPost: 5, resolved: 1, unmatched: 0, skipped: 0, unrecognized: 0 });
+  assert.deepEqual({ ...plan.counts }, { roots: 3, replies: 2, done: 0, toPost: 5, resolved: 1, unmatched: 0, skipped: 0, misplaced: 0, unrecognized: 0 });
 
   const existing = [
     { id: 'new10', message: plan.threads[0].message },
@@ -185,7 +185,7 @@ test('buildPlan can skip resolved threads with their replies', () => {
   data.comments.push({ id: '21', parent_id: '20', user: user('A'), created_at: '2026-01-03T00:00:00Z', message: 'ok', reactions: [] });
   const plan = L.buildPlan(data, [], { '1:2': null }, { skipResolved: true });
   assert.deepEqual(plain(plan.threads.map((t) => t.sourceId)), ['10', '40']);
-  assert.deepEqual({ ...plan.counts }, { roots: 2, replies: 2, done: 0, toPost: 4, resolved: 0, unmatched: 0, skipped: 2, unrecognized: 0 });
+  assert.deepEqual({ ...plan.counts }, { roots: 2, replies: 2, done: 0, toPost: 4, resolved: 0, unmatched: 0, skipped: 2, misplaced: 0, unrecognized: 0 });
   // Nothing skipped means the "Done" check doesn't expect the resolved thread either.
   assert.deepEqual(plain(L.verifyImport(plan, plan.threads.flatMap((t, i) =>
     [{ id: 'r' + i, message: t.message }].concat(t.replies.map((r, j) => ({ id: 'r' + i + j, parent_id: 'r' + i, message: r.message })))))),
@@ -228,6 +228,22 @@ test('verifyImport pairs identical replies with the copy under the right thread'
     { id: 'z', parent_id: 'a', message: t10.replies[1].message }
   ];
   assert.deepEqual(plain(L.verifyImport(plan, copies)), { missing: [], misplaced: [] });
+});
+
+test('buildPlan counts copied replies that sit under the wrong thread', () => {
+  const plan = L.buildPlan(sampleExport(), [], { '1:2': '1:2' });
+  const [t10, t20] = plan.threads;
+  const existing = [
+    { id: 'a', message: t10.message }, { id: 'b', message: t20.message },
+    // Reply 30 belongs under thread 10 but was copied under thread 20.
+    { id: 'c', parent_id: 'a', message: t10.replies[0].message },
+    { id: 'd', parent_id: 'b', message: t10.replies[1].message }
+  ];
+  const rerun = L.buildPlan(sampleExport(), existing, { '1:2': '1:2' });
+  assert.equal(rerun.counts.misplaced, 1);
+  assert.deepEqual(plain(rerun.misplaced.map((r) => r.sourceId)), ['30']);
+  // It still counts as copied, so it isn't posted again.
+  assert.equal(rerun.threads[0].replies[1].existingId, 'd');
 });
 
 test('checkOpenFile tells a wrong file apart from frames deleted over time', () => {
