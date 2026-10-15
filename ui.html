@@ -53,6 +53,13 @@
     background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
   }
   section button + button { margin-top: 8px; }
+  button.danger {
+    width: 100%; padding: 9px; border: 0; border-radius: 6px;
+    background: var(--danger); color: var(--on-brand); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  /* Undoing an import sits apart from the import steps. */
+  .remove { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .remove-confirm { margin-top: 12px; }
   button:disabled { opacity: 0.45; cursor: default; }
   /* Alerts: an icon, an optional title, the message, and an optional note. Tints are mixed
      from the status color and the panel background, so they follow Figma's light and dark themes. */
@@ -216,6 +223,13 @@
   <div class="bar" id="im-bar" role="progressbar" aria-label="Posting comments" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><div></div></div>
   <div class="status" id="im-status" role="status" aria-live="polite"></div>
   <table class="summary" id="im-summary" hidden></table>
+  <div class="remove">
+    <button class="link" type="button" id="im-remove-start">Remove copied comments from this file…</button>
+    <div class="remove-confirm" id="im-remove-confirm" hidden>
+      <button class="danger" type="button" id="im-remove-run">Remove comments</button>
+      <button class="secondary" type="button" id="im-remove-cancel">Cancel</button>
+    </div>
+  </div>
 </section>
 
 <script>
@@ -512,6 +526,30 @@ function checkOpenFile(comments, locators) {
   return { wrongFile: ids.length > 0 && found === 0, threadsWithoutFrame: threadsWithoutFrame };
 }
 
+// Labels written by earlier versions of this plugin, so their copies can still be removed.
+var OLD_MARKERS = { '[Migrated comment]': true, '[Migrated reply]': true };
+
+// Copied comments in a file, grouped by who posted them (largest group first), threads
+// before replies within each group. Only the poster can delete a comment, so removal
+// works one group at a time.
+function groupCopied(comments) {
+  var groups = {};
+  var order = [];
+  (comments || []).forEach(function (c) {
+    var first = String(c.message || '').replace(/\r\n?/g, '\n').trim().split('\n')[0].replace(/\s+$/, '');
+    if (!MARKERS[first] && !OLD_MARKERS[first]) return;
+    var id = c.user && c.user.id || 'unknown';
+    if (!groups[id]) { groups[id] = { userId: id, handle: c.user && c.user.handle || 'unknown', comments: [] }; order.push(id); }
+    groups[id].comments.push(c);
+  });
+  return order.map(function (id) {
+    var g = groups[id];
+    g.comments = g.comments.filter(function (c) { return !c.parent_id; })
+      .concat(g.comments.filter(function (c) { return c.parent_id; }));
+    return g;
+  }).sort(function (a, b) { return b.comments.length - a.comments.length; });
+}
+
 function safeFileName(name) {
   return (String(name || 'figma-file').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'figma-file') + ' - comments.json';
 }
@@ -555,7 +593,7 @@ window.onmessage = function (event) {
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
 function friendlyError(status, detail, apiHost, method) {
-  var scope = method === 'POST' ? 'file_comments:write' : 'file_comments:read';
+  var scope = method === 'GET' ? 'file_comments:read' : 'file_comments:write';
   if (status === 403) return 'Figma refused the request (403). Check that the token was made in ' + envLabel(apiHost) +
     ', has not expired, has the scope ' + scope + ', and that you can open this file.';
   if (status === 404) return 'File not found (404). Check the link.';
@@ -845,6 +883,8 @@ function readJsonFile(file) {
 }
 
 async function runPreview() {
+  removal = null;
+  showRemoveConfirm(false);
   $('im-preview').disabled = true;
   $('im-run').hidden = true;
   $('im-summary').hidden = true;
@@ -940,6 +980,151 @@ async function runPreview() {
   }
 }
 
+// ---------- Remove copied comments ----------
+// The undo for an import: deletes comments that start with a copy label and were
+// posted by whoever owns the token. Other comments are never touched.
+var removal = null;
+
+function showRemoveConfirm(show) {
+  $('im-remove-confirm').hidden = !show;
+  $('im-remove-start').hidden = show;
+}
+
+async function startRemoval() {
+  $('im-remove-start').disabled = true;
+  $('im-run').hidden = true;
+  $('im-summary').hidden = true;
+  importPlan = null;
+  removal = null;
+  try {
+    var input = readInputs('im');
+    setStatus('im-status', 'Finding copied comments\u2026');
+    var res = await api(input.link.apiHost, input.token, 'GET', '/v1/files/' + input.link.key + '/comments', null,
+      waitStatus('im-status', 'finding copied comments'));
+    rememberToken(input.link.apiHost, input.token, input.remember);
+    var groups = groupCopied(res.comments || []);
+    if (!groups.length) {
+      setStatus('im-status', { kind: 'info', title: 'Nothing to remove', body: 'This file has no copied comments.' });
+      return;
+    }
+    removal = { target: input, groups: groups };
+    var total = groups.reduce(function (n, g) { return n + g.comments.length; }, 0);
+    var who = groups.length === 1
+      ? 'They were posted by ' + groups[0].handle + ', and only that person can remove them.'
+      : 'They were posted by ' + groups.map(function (g) { return g.handle + ' (' + g.comments.length + ')'; }).join(', ') +
+        '. Only the ones you posted will be removed.';
+    setStatus('im-status', { kind: 'warning',
+      title: groups.length === 1 ? 'Remove ' + total + (total === 1 ? ' copied comment?' : ' copied comments?') : 'Remove your copied comments?',
+      body: 'This file has ' + total + (total === 1 ? ' copied comment. ' : ' copied comments. ') + who +
+        ' Other comments aren\u2019t touched. This can\u2019t be undone.' });
+    $('im-remove-run').textContent = groups.length === 1
+      ? 'Remove ' + total + (total === 1 ? ' comment' : ' comments') : 'Remove my copied comments';
+    showRemoveConfirm(true);
+  } catch (err) {
+    setStatus('im-status', { kind: 'error', title: 'Couldn\u2019t check for copied comments', body: err.message });
+  } finally {
+    $('im-remove-start').disabled = false;
+  }
+}
+
+async function runRemoval() {
+  var r = removal;
+  removal = null;
+  showRemoveConfirm(false);
+  if (!r) return;
+  var host = r.target.link.apiHost;
+  var token = r.target.token;
+  var path = '/v1/files/' + r.target.link.key + '/comments';
+  var onWait = waitStatus('im-status', 'removing');
+  var bar = $('im-bar');
+  var mine = null;
+  var done = 0;
+  var threads = 1;
+  $('im-preview').disabled = true;
+  $('im-remove-start').disabled = true;
+  lockImportInputs(true);
+  bar.firstElementChild.style.width = '0%';
+  bar.setAttribute('aria-valuenow', '0');
+  bar.hidden = false;
+  $('im-status').setAttribute('aria-busy', 'true');
+
+  function tick() {
+    var percent = Math.min(100, Math.round(done / threads * 100));
+    bar.firstElementChild.style.width = percent + '%';
+    bar.setAttribute('aria-valuenow', String(percent));
+    setStatus('im-status', 'Removing copied comments\u2026 ' + done + ' of ' + threads + ' done. Keep this window open.');
+  }
+  // Already gone (a reply removed with its thread) counts as removed.
+  async function remove(c) {
+    await pace();
+    try {
+      await api(host, token, 'DELETE', path + '/' + encodeURIComponent(c.id), null, onWait);
+    } catch (err) {
+      if (err.status !== 404) throw err;
+    }
+  }
+  async function mineLeft() {
+    var now = await api(host, token, 'GET', path, null, waitStatus('im-status', 'checking the result'));
+    var g = groupCopied(now.comments || []).filter(function (x) { return x.userId === mine.userId; })[0];
+    return g ? g.comments : [];
+  }
+
+  try {
+    // Figma only lets people delete their own comments, so the first group that
+    // allows a delete is the token owner's.
+    setStatus('im-status', 'Removing copied comments\u2026');
+    for (var i = 0; i < r.groups.length && !mine; i++) {
+      try {
+        await remove(r.groups[i].comments[0]);
+        mine = r.groups[i];
+      } catch (err) {
+        if (err.status !== 403) throw err;
+      }
+    }
+    if (!mine) {
+      throw new Error('Figma didn\u2019t let this token remove any of them. Comments can only be removed by the person ' +
+        'who posted them, with a token that has the scope file_comments:write.');
+    }
+    var roots = mine.comments.filter(function (c) { return !c.parent_id; });
+    threads = Math.max(1, roots.length);
+    done = 1;
+    tick();
+    // Threads first: removing a thread may remove its replies too.
+    var rest = (roots.length ? roots : mine.comments).slice(1);
+    for (var j = 0; j < rest.length; j++) {
+      try { await remove(rest[j]); } catch (err) { if (err.fatal) throw err; console.warn('Remove ' + rest[j].id + ' failed: ' + err.message); }
+      done++;
+      tick();
+    }
+    // Then any of this person's copied replies that are still there.
+    var leftovers = await mineLeft();
+    for (var k = 0; k < leftovers.length; k++) {
+      try { await remove(leftovers[k]); } catch (err) { if (err.fatal) throw err; console.warn('Remove ' + leftovers[k].id + ' failed: ' + err.message); }
+    }
+    var remaining = (await mineLeft()).length;
+    var removed = mine.comments.length - remaining;
+    var others = r.groups.length > 1;
+    if (remaining === 0) {
+      setStatus('im-status', { kind: 'success', title: 'Copied comments removed',
+        body: 'Removed ' + removed + (removed === 1 ? ' copied comment' : ' copied comments') + ' posted by ' + mine.handle + '.' +
+          (others ? ' Copied comments posted by other people are still there; they can remove them with their own token.' : '') });
+    } else {
+      setStatus('im-status', { kind: 'warning', title: 'Some copied comments are still there',
+        body: remaining + (remaining === 1 ? ' copied comment' : ' copied comments') + ' couldn\u2019t be removed. ' +
+          'Click Remove copied comments again to retry.' });
+    }
+  } catch (err) {
+    setStatus('im-status', { kind: 'error', title: 'Removal stopped', body: err.message,
+      note: mine ? 'Some comments may already be removed. Click Remove copied comments again to continue.' : '' });
+  } finally {
+    bar.hidden = true;
+    $('im-status').removeAttribute('aria-busy');
+    $('im-preview').disabled = false;
+    $('im-remove-start').disabled = false;
+    lockImportInputs(false);
+  }
+}
+
 // Locked while posting, so the posts match what Preview showed.
 var IMPORT_INPUTS = ['im-link', 'im-token', 'im-file', 'im-skip-resolved', 'im-skip-deleted'];
 function lockImportInputs(locked) {
@@ -958,6 +1143,7 @@ async function runImport() {
   var bar = $('im-bar');
   $('im-run').disabled = true;
   $('im-preview').disabled = true;
+  $('im-remove-start').disabled = true;
   lockImportInputs(true);
   bar.firstElementChild.style.width = '0%';
   bar.setAttribute('aria-valuenow', '0');
@@ -983,21 +1169,6 @@ async function runImport() {
   }
 
   try {
-    // A labeled point in the version history marks the file as it was before this import.
-    setStatus('im-status', 'Saving a version to this file\u2019s history\u2026');
-    try {
-      await ask('save-version', {
-        title: 'Before Copy Comments import',
-        description: 'Saved by Copy Comments before posting ' + total + (total === 1 ? ' comment' : ' comments') +
-          ' copied from \u201c' + importData.source.fileName + '\u201d (' + envLabel(importData.source.apiHost) + ').'
-      });
-    } catch (err) {
-      var noVersion = new Error('Couldn\u2019t save a version to this file\u2019s history, so nothing was posted. ' +
-        'Saving a version needs edit access to this file. (' + err.message + ')');
-      noVersion.fatal = true;
-      throw noVersion;
-    }
-
     for (var i = 0; i < plan.threads.length; i++) {
       var t = plan.threads[i];
       var rootId = t.existingId;
@@ -1099,6 +1270,7 @@ async function runImport() {
     $('im-status').removeAttribute('aria-busy');
     $('im-run').disabled = false;
     $('im-preview').disabled = false;
+    $('im-remove-start').disabled = false;
     lockImportInputs(false);
   }
 }
@@ -1123,6 +1295,12 @@ $('tabs').addEventListener('keydown', function (e) {
 // Post uses what Preview checked, so any later change to these asks for a fresh preview.
 IMPORT_INPUTS.forEach(function (id) {
   $(id).addEventListener(id === 'im-link' || id === 'im-token' ? 'input' : 'change', function () {
+    if (removal) {
+      removal = null;
+      showRemoveConfirm(false);
+      setStatus('im-status', { kind: 'info', body: 'Something changed. Nothing was removed.' });
+      return;
+    }
     if (!importPlan) return;
     importPlan = null;
     $('im-run').hidden = true;
@@ -1134,6 +1312,13 @@ $('ex-run').onclick = runExport;
 $('ex-again').onclick = function () { if (lastExport) download(lastExport); };
 $('im-preview').onclick = runPreview;
 $('im-run').onclick = runImport;
+$('im-remove-start').onclick = startRemoval;
+$('im-remove-run').onclick = runRemoval;
+$('im-remove-cancel').onclick = function () {
+  removal = null;
+  showRemoveConfirm(false);
+  setStatus('im-status', { kind: 'info', body: 'Nothing was removed.' });
+};
 wireToken('ex-link', 'ex-token');
 wireToken('im-link', 'im-token');
 </script>

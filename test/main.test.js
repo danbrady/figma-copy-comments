@@ -17,13 +17,13 @@ function node(id, name, type, children, box) {
   return n;
 }
 
-function fakeFigma({ pages = [], storage = {}, versionError = null } = {}) {
+function fakeFigma({ pages = [], storage = {} } = {}) {
   const root = node('0:0', 'Doc', 'DOCUMENT', pages);
   pages.forEach((p) => { p.loadAsync = async () => {}; });
   const byId = {};
   (function index(n) { byId[n.id] = n; n.children.forEach(index); })(root);
   const sent = [];
-  const calls = { showUI: [], resize: [], versions: [], storageSet: {}, storageDeleted: [] };
+  const calls = { showUI: [], resize: [], storageSet: {}, storageDeleted: [] };
   const figma = {
     root,
     getNodeByIdAsync: async (id) => byId[id] || null,
@@ -33,11 +33,6 @@ function fakeFigma({ pages = [], storage = {}, versionError = null } = {}) {
       deleteAsync: async (k) => { calls.storageDeleted.push(k); },
     },
     showUI: (_html, opts) => calls.showUI.push(opts),
-    saveVersionHistoryAsync: async (title, description) => {
-      if (versionError) throw new Error(versionError);
-      calls.versions.push({ title, description });
-      return { id: 'v1' };
-    },
     notify: () => {},
     ui: { postMessage: (m) => sent.push(m), resize: (w, h) => calls.resize.push([w, h]) },
   };
@@ -96,18 +91,6 @@ test('resolve keeps the same id when name and type match, else walks page and pa
     '8:8': null,
   } });
   assert.deepEqual(plain(res.result), { '2:2': '2:2', '2:9': '2:2', '7:7': '2:1', '7:8': null, '7:9': null, '8:8': null });
-});
-
-test('save-version saves a named version, and reports a failure as an error', async () => {
-  const ok = await start();
-  const res = await ok.ask({ type: 'save-version', requestId: 3, title: 'Before Copy Comments import', description: 'd' });
-  assert.deepEqual(plain(res.result), { id: 'v1' });
-  assert.deepEqual(ok.calls.versions, [{ title: 'Before Copy Comments import', description: 'd' }]);
-
-  const denied = await start({ versionError: 'No edit access' });
-  const err = await denied.ask({ type: 'save-version', requestId: 4, title: 't', description: 'd' });
-  assert.equal(err.result, null);
-  assert.equal(err.error, 'No edit access');
 });
 
 test('tokens are stored per environment and cleared when empty; unknown hosts are ignored', async () => {

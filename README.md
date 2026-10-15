@@ -40,7 +40,7 @@ The first time you open the plugin, a setup screen explains the tokens and how t
 | Export | the environment you're copying FROM | `file_comments:read` |
 | Import | the environment you're copying TO | `file_comments:read` **and** `file_comments:write` |
 
-Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result, and write to post. You need to be able to open both files and edit the file you're copying TO, because Import saves a version to its history before posting. Copied comments are posted under the name of whoever runs Import.
+Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result, and write to post. You need to be able to open both files and comment on the file you're copying TO. Copied comments are posted under the name of whoever runs Import.
 
 Whoever runs Import should have a **Full or Dev seat** in the environment you're copying TO. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes.
 
@@ -56,13 +56,15 @@ In the file you're copying FROM, choose **File › Save local copy…**. Then im
 1. Open the file you're copying TO, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
 2. Paste that file's link and your **Import** token.
 3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. To leave out threads pinned to frames that were already deleted when you exported, and their replies, tick **Skip threads whose frame was deleted**; otherwise they're placed near the top-left of the canvas. In long-lived files these are often most of the old threads: in one file we tested, 163 of 230. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
-4. Click **Post comments** and keep the window open until it says **Import complete**. Before posting, the plugin saves a version named **Before Copy Comments import** to the file's version history, which needs edit access to the file; if it can't save one, it stops without posting. Comments aren't part of version history, so restoring that version won't remove the copied comments. It marks when the import happened. The plugin then checks the file and reports anything missing.
+4. Click **Post comments** and keep the window open until it says **Import complete**.
 
 If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped. Before reporting a comment as missing, the plugin checks the file again for up to 15 seconds, because Figma can take a moment to list new comments. A post that returned an error but did reach the file counts as posted.
 
 If a reply ends up under the wrong thread, Preview and the final message say so; the developer console lists which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
 
 If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. Examples of the change are in the developer console (**Plugins › Development › Show/Hide console**).
+
+**Undo an import:** on the Import tab, click **Remove copied comments from this file…**. The plugin counts the comments that start with `[Copied comment]` or `[Copied reply]` (or the older `[Migrated …]` labels), says who posted them, and asks before removing anything. Figma only lets people delete their own comments, so it removes the ones posted by your token's owner and leaves everything else, including other people's copies. Restoring a version from the file's version history doesn't remove comments, because Figma doesn't keep comments in version history.
 
 **Tokens:** "Remember on this device" stores a token only in this browser or app, through Figma's plugin storage. Untick it on shared computers. Tokens are only ever sent to `api.figma.com` or `api.figma-gov.com`; the manifest blocks every other domain.
 
@@ -85,7 +87,7 @@ If the plugin says **Don't run Import again on this file**, don't. Figma changed
 | File | Purpose |
 |---|---|
 | `manifest.json` | Plugin manifest. `networkAccess` allows only the two Figma API hosts |
-| `code.js` | Main thread: node lookups (`getNodeByIdAsync`), the version saved before Import (`saveVersionHistoryAsync`), and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
+| `code.js` | Main thread: node lookups (`getNodeByIdAsync`), and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
 | `ui.html` | UI, plus the REST calls (`fetch` with `X-Figma-Token`). The block between `BEGIN LOGIC` and `END LOGIC` is pure, tested logic |
 | `test/logic.test.js` | Unit tests for that logic, plus a check that the whole `ui.html` script parses |
 | `test/main.test.js` | Tests for `code.js`, run against a small fake of the Figma Plugin API |
