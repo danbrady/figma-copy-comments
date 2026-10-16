@@ -35,7 +35,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
 | `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
 | `scripts/visual-qa/` | `npm run visual-qa`: drives the built UI against a fake Figma (`fake-figma.mjs`) through every scenario (`scenarios.mjs`) and writes the report (`report.mjs`) |
-| `docs/visual-qa/` | Every screen and message, generated: `index.html` (screenshots in light and dark, with what makes each appear), `messages.md` (all message text), and `png/` |
+| `docs/visual-qa/` | Every screen and message, generated: `index.html` (screenshots in light and dark, with what makes each appear) and `messages.md` (all message text). The screenshots in `png/` aren't committed, so run `npm run visual-qa` to see them |
 | `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
 | `site/` | The GitHub Pages site the Community listing links to: the user guide (`index.md`), layout, and styles. `.github/workflows/pages.yml` builds it with Jekyll and adds `PRIVACY.md` and the listing images |
 | `PRIVACY.md` | The privacy policy: what the plugin reads, where it goes, and what it keeps. Figma requires one for plugins that handle user data |
