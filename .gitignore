@@ -7,6 +7,9 @@ dist/
 .DS_Store
 node_modules/
 
+# Visual QA screenshots: about 14 MB, and rewritten on every run. Make them with `npm run visual-qa`.
+docs/visual-qa/png/
+
 # Copied into site/ by .github/workflows/pages.yml at build time.
 site/privacy.md
 site/images/
