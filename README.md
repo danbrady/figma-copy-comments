@@ -109,6 +109,8 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `src/types.ts`, `src/messages.ts` | Shared types: Figma comment data, and the messages between the UI and the main thread |
 | `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
 | `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
+| `scripts/visual-qa/` | `npm run visual-qa`: drives the built UI against a fake Figma (`fake-figma.mjs`) through every scenario (`scenarios.mjs`) and writes the report (`report.mjs`) |
+| `docs/visual-qa/` | Every screen and message, generated: `index.html` (screenshots in light and dark, with what makes each appear), `messages.md` (all message text), and `png/` |
 | `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
 | `PRIVACY.md` | The privacy policy: what the plugin reads, where it goes, and what it keeps. Figma requires one for plugins that handle user data |
 | `assets/listing/listing.md` | The Community listing's name, description, tags, and a note for reviewers |
@@ -131,6 +133,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `npm run lint` | Runs Figma's ESLint rules on `src/` |
 | `npm test` | Builds, then runs the tests |
 | `npm run check` | All three checks: typecheck, lint, and tests |
+| `npm run visual-qa` | Rebuilds, then regenerates `docs/visual-qa/`. Fails if a message in `src/ui.ts` isn't reached by any scenario, so add one when you add a message |
 | `npm run listing` | Re-renders the images in `assets/listing/` with your installed Google Chrome (set `CHROME_PATH` to use another). Run it after changing the UI |
 
 ### 1. Load the plugin
