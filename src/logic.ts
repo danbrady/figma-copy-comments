@@ -330,6 +330,52 @@ export function findAltered(sent: SentComment[], targetComments: FigmaComment[] 
   });
 }
 
+// Names a copied comment so someone can find it in the file: the original author and
+// time, then the start of its text. "A · Jan 1, 2026, 7:00:00 AM ET: “Can we bump…”"
+const SNIPPET = 60;
+export function describeCopy(message: string | null | undefined): string {
+  const lines = String(message || '').replace(/\r\n?/g, '\n').trim().split('\n');
+  const copy = !!MARKERS[lines[0]];
+  const d = lines.lastIndexOf(DIVIDER);
+  const details = copy && d > 0 ? lines[d + 1] || '' : '';
+  const first = copy ? (lines[1] !== DIVIDER ? lines[1] || '' : '') : lines[0];
+  const snippet = first.length > SNIPPET ? first.slice(0, SNIPPET - 1) + '…' : first;
+  const quoted = snippet ? '“' + snippet + '”' : '';
+  return details && quoted ? details + ': ' + quoted : details || quoted;
+}
+
+// An @ that starts a name: not inside a word or an email address, and followed by a letter or digit.
+const MENTION = /(^|[^\w.@])@[\p{L}\p{N}_]/u;
+
+// How many comments still to post @mention someone in their original text. Figma may turn
+// those back into live mentions, which notify people whatever their notification settings.
+// Only the original text is checked, not the details the plugin adds below the divider.
+export function countMentions(plan: Pick<Plan, 'threads'>): number {
+  const mentions = (message: string) => {
+    const lines = message.split('\n');
+    const d = lines.lastIndexOf(DIVIDER);
+    return MENTION.test(lines.slice(1, d > 0 ? d : lines.length).join('\n'));
+  };
+  let n = 0;
+  plan.threads.forEach((t) => {
+    if (!t.existingId && mentions(t.message)) n++;
+    t.replies.forEach((r) => { if (!r.existingId && mentions(r.message)) n++; });
+  });
+  return n;
+}
+
+// One line per misplaced reply, saying which thread it belongs under.
+export function misplacedList(plan: Pick<Plan, 'threads'>, ids: string[]): string[] {
+  const wanted = new Set(ids);
+  const out: string[] = [];
+  plan.threads.forEach((t) => {
+    t.replies.forEach((r) => {
+      if (wanted.has(r.sourceId)) out.push(describeCopy(r.message) + ', which belongs under ' + describeCopy(t.message));
+    });
+  });
+  return out;
+}
+
 // "45 seconds", "3 minutes", "2 hours", "3 days"
 export function formatWait(seconds: number): string {
   const units: [number, number, string][] = [[86400 * 1.5, 86400, 'day'], [5400, 3600, 'hour'], [90, 60, 'minute'], [0, 1, 'second']];

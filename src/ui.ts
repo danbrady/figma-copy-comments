@@ -2,8 +2,8 @@
 // Makes the REST calls (the Plugin API has no comments API) and asks the main thread
 // (src/code.ts) for anything that needs the document. Built into dist/ui.html.
 import {
-  FORMAT, buildPlan, checkOpenFile, commentNodeIds, detailsKey, findAltered, formatWait,
-  groupCopied, parseFileLink, safeFileName, verifyImport,
+  FORMAT, buildPlan, checkOpenFile, commentNodeIds, countMentions, describeCopy, findAltered, formatWait,
+  groupCopied, misplacedList, parseFileLink, safeFileName, verifyImport,
 } from './logic';
 import type { CopiedGroup, FileLink, Plan, SentComment } from './logic';
 import type { MainToUi, Requests, UiToMain } from './messages';
@@ -32,16 +32,21 @@ const messageOf = (err: unknown) => (err instanceof Error ? err.message : String
 const isFatal = (err: unknown) => err instanceof PluginError && err.fatal;
 const statusOf = (err: unknown) => (err instanceof PluginError ? err.status : undefined);
 
+// The alert for a failed step: the error's own title and kind if it has them, such as being offline.
+function failure(err: unknown, title: string): StatusMessage {
+  const e = err instanceof PluginError ? err : null;
+  return { kind: (e && e.kind) || 'error', title: (e && e.title) || title, body: messageOf(err) };
+}
+
 // ---------- Plugin bridge ----------
+// The token is only kept in memory while the window is open; it's never stored.
 interface ReadInputs {
   link: FileLink;
   token: string;
-  remember: boolean;
 }
 
 let nextRequest = 1;
 const pending = new Map<number, { resolve: (result: unknown) => void; reject: (err: Error) => void }>();
-let tokens: Record<string, string> = {};
 let fileName = '';
 let lastExport: ExportFile | null = null;
 let importPlan: Plan | null = null;
@@ -63,7 +68,6 @@ window.onmessage = (event: MessageEvent) => {
   const msg: MainToUi | undefined = event.data && event.data.pluginMessage;
   if (!msg) return;
   if (msg.type === 'init') {
-    tokens = msg.tokens || {};
     fileName = msg.fileName;
     showWelcome(!msg.welcomeHidden);
   } else if (msg.type === 'response') {
@@ -109,18 +113,24 @@ function postsPerMinute(): number {
 
 type Method = 'GET' | 'POST' | 'DELETE';
 
+function offlineError(): PluginError {
+  return new PluginError('Copy Comments needs an internet connection to reach Figma\u2019s API. Reconnect, then try again.', { fatal: true, title: 'You\u2019re offline', kind: 'warning' });
+}
+
 // onWait(seconds), if given, is called before sleeping on a rate limit, so the status can say so.
 async function api<T = unknown>(apiHost: string, token: string, method: Method, path: string,
   body?: object | null, onWait?: (seconds: number) => void): Promise<T> {
   for (let attempt = 0; attempt < BACKOFF_SECONDS.length; attempt++) {
+    if (!navigator.onLine) throw offlineError();
     let res: Response;
     try {
       const headers: Record<string, string> = { 'X-Figma-Token': token };
       if (body) headers['Content-Type'] = 'application/json';
       res = await fetch(apiHost + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
     } catch {
-      throw new PluginError('Could not reach ' + apiHost + '. Check your connection. Your network or browser ' +
-        'may also be blocking this plugin from calling Figma\u2019s API; see the README.', { fatal: true });
+      if (!navigator.onLine) throw offlineError();
+      throw new PluginError('Could not reach ' + apiHost + '. Check your connection. If it\u2019s working, your network ' +
+        'or browser may be blocking this plugin from calling Figma\u2019s API.', { fatal: true });
     }
     if (res.status === 429) {
       // Retry-After is often unreadable from a plugin (CORS), so there's a fallback schedule.
@@ -206,23 +216,16 @@ const UNMATCHED_NOTE = 'Comments pinned to frames this file doesn’t have go ne
 function misplacedHelp(n: number): string {
   return (n === 1 ? '1 reply is' : n + ' replies are') + ' under the wrong thread. A re-run won’t move ' +
     (n === 1 ? 'it' : 'them') + ': delete ' + (n === 1 ? 'that reply' : 'those replies') + ' in this file, then click ' +
-    '**Preview** and **Post comments** again to post ' + (n === 1 ? 'it' : 'them') + ' in the right thread. ' +
-    'The plugin’s developer console lists ' + (n === 1 ? 'it' : 'them') + '.';
+    '**Preview** and **Post comments** again to post ' + (n === 1 ? 'it' : 'them') + ' in the right thread.';
 }
 
-// Lists misplaced replies by their first lines, so they can be found in the file.
-function logMisplaced(plan: Plan, ids: string[]): void {
-  if (!ids.length) return;
-  const wanted = new Set(ids);
-  plan.threads.forEach((t) => {
-    t.replies.forEach((r) => {
-      if (wanted.has(r.sourceId)) {
-        const key = detailsKey(t.message);
-        console.warn('Reply under the wrong thread:\n' + r.message + '\n--- belongs under the thread ---\n' +
-          t.message.split('\n')[1] + (key ? '\n' + key.split('\n')[1] : ''));
-      }
-    });
-  });
+// Who Figma may tell about the posts. Followers get grouped emails and in-app notifications;
+// an @mention, if Figma makes it live again, reaches that person whatever their settings.
+function notifyNote(mentions: number): string {
+  return 'People who follow this file may be notified about the new comments.' + (mentions
+    ? ' ' + (mentions === 1 ? '1 of them @mentions someone' : mentions + ' of them @mention people') +
+      ', and Figma may notify the people mentioned even if they’ve turned notifications off.'
+    : '');
 }
 
 // Static, trusted markup. Filled shapes use currentColor; the marks inside are white.
@@ -244,7 +247,11 @@ interface StatusMessage {
   title?: string;
   body?: string;
   note?: string;
+  // Comments the message is about, listed below it so they can be found in the file.
+  items?: string[];
 }
+
+const MAX_ITEMS = 10;
 
 // Status text may wrap control names in **double asterisks**, which show in bold.
 // Built from text nodes, so message text (including Figma error details) is never parsed as HTML.
@@ -281,6 +288,18 @@ function setStatus(id: string, status: string | StatusMessage): void {
       appendMarked(node, content);
       text.appendChild(node);
     });
+  if (msg.items && msg.items.length) {
+    const list = document.createElement('ul');
+    list.className = 'status-list';
+    const shown = msg.items.slice(0, MAX_ITEMS);
+    if (msg.items.length > MAX_ITEMS) shown.push('…and ' + (msg.items.length - MAX_ITEMS) + ' more');
+    shown.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    text.appendChild(list);
+  }
   el.appendChild(icon);
   el.appendChild(text);
 }
@@ -312,25 +331,12 @@ function renderSummary(id: string, rows: SummaryRow[]): void {
   table.hidden = shown.length === 0;
 }
 
-// Prefill the token saved for the Figma site the pasted link is on.
-function wireToken(linkId: string, tokenId: string): void {
-  inputEl(linkId).addEventListener('input', () => {
-    const parsed = parseFileLink(inputEl(linkId).value);
-    if (parsed && !inputEl(tokenId).value && tokens[parsed.apiHost]) inputEl(tokenId).value = tokens[parsed.apiHost];
-  });
-}
-
-function rememberToken(apiHost: string, token: string, remember: boolean): void {
-  tokens[apiHost] = remember ? token : '';
-  send({ type: 'save-token', host: apiHost, token: remember ? token : '' });
-}
-
 function readInputs(prefix: 'ex' | 'im'): ReadInputs {
   const link = parseFileLink(inputEl(prefix + '-link').value);
   if (!link) throw new Error('Paste a link to this file. In Figma, use **Share \u203a Copy link**.');
   const token = inputEl(prefix + '-token').value.trim();
   if (!token) throw new Error('Paste a personal access token.');
-  return { link, token, remember: inputEl(prefix + '-remember').checked };
+  return { link, token };
 }
 
 function download(data: ExportFile): void {
@@ -351,7 +357,6 @@ async function runExport(): Promise<void> {
     const input = readInputs('ex');
     setStatus('ex-status', 'Reading comments…');
     const res = await getComments(input.link, input.token, waitStatus('ex-status', 'reading comments'));
-    rememberToken(input.link.apiHost, input.token, input.remember);
     const comments = res.comments || [];
 
     setStatus('ex-status', 'Recording where each comment is pinned…');
@@ -388,7 +393,7 @@ async function runExport(): Promise<void> {
           (n === 1 ? 'it goes' : 'they go') + ' to the top-left of the canvas unless you tick **Skip threads whose frame was deleted**.' : '' });
     }
   } catch (err) {
-    setStatus('ex-status', { kind: 'error', title: 'Export failed', body: messageOf(err) });
+    setStatus('ex-status', failure(err, 'Export failed'));
   } finally {
     buttonEl('ex-run').disabled = false;
   }
@@ -430,7 +435,6 @@ async function runPreview(): Promise<void> {
 
     setStatus('im-status', 'Checking comments already in this file…');
     const existing = (await getComments(input.link, input.token, waitStatus('im-status', 'checking comments'))).comments || [];
-    rememberToken(input.link.apiHost, input.token, input.remember);
 
     // Pins are matched in the open file but posted to the linked one, so they must be the same file.
     const targetIds = commentNodeIds(existing);
@@ -467,17 +471,17 @@ async function runPreview(): Promise<void> {
       c.unmatched ? ['Pins that could not be matched', c.unmatched] : null,
       ['Comments to post now', c.toPost],
     ]);
-    logMisplaced(plan, plan.misplaced.map((r) => r.sourceId));
     const misplacedNote = c.misplaced ? misplacedHelp(c.misplaced) : '';
+    const misplaced = misplacedList(plan, plan.misplaced.map((r) => r.sourceId));
     const minutes = Math.max(1, Math.ceil(c.toPost * pacing.interval / 60000));
     const timing = 'They’ll be posted under your name, about ' + postsPerMinute() + ' a minute, so this takes about ' +
-      minutes + (minutes === 1 ? ' minute' : ' minutes') + '. Keep this window open while posting.';
+      minutes + (minutes === 1 ? ' minute' : ' minutes') + '. Keep this window open while posting. ' + notifyNote(countMentions(plan));
     if (c.toPost === 0 && c.done === 0 && (c.skipped || c.skippedDeleted)) {
       setStatus('im-status', { kind: 'success', title: 'Nothing to post',
         body: 'Every thread is left out by the skip options above.' });
     } else if (c.toPost === 0 && c.misplaced) {
       setStatus('im-status', { kind: 'warning', title: 'Some replies are in the wrong thread',
-        body: 'Every comment is in this file. ' + misplacedNote });
+        body: 'Every comment is in this file. ' + misplacedNote, items: misplaced });
     } else if (c.toPost === 0) {
       setStatus('im-status', { kind: 'success', title: 'Already up to date',
         body: 'Every comment has already been copied to this file.' });
@@ -490,17 +494,16 @@ async function runPreview(): Promise<void> {
           : 'This file has ' + c.unrecognized + ' copied comments that don’t match this export file. If they came from ' +
             'the same original file, posting now would duplicate them. That happens when the export file is newer than ' +
             'the one used before, or when Figma changed their text. Post only if they came from a different file.'),
-        note: [timing, c.unmatched ? UNMATCHED_NOTE : '', misplacedNote].filter(Boolean).join('\n\n') });
+        note: [timing, c.unmatched ? UNMATCHED_NOTE : '', misplacedNote].filter(Boolean).join('\n\n'), items: misplaced });
       $('im-run').hidden = false;
     } else {
       setStatus('im-status', { kind: 'info', title: 'Ready to post ' + c.toPost + (c.toPost === 1 ? ' comment' : ' comments'),
         body: timing + ' Review the numbers, then click **Post comments**.',
-        note: [c.unmatched ? UNMATCHED_NOTE : '', misplacedNote].filter(Boolean).join('\n\n') });
+        note: [c.unmatched ? UNMATCHED_NOTE : '', misplacedNote].filter(Boolean).join('\n\n'), items: misplaced });
       $('im-run').hidden = false;
     }
   } catch (err) {
-    const e = err instanceof PluginError ? err : null;
-    setStatus('im-status', { kind: (e && e.kind) || 'error', title: (e && e.title) || 'Preview failed', body: messageOf(err) });
+    setStatus('im-status', failure(err, 'Preview failed'));
   } finally {
     buttonEl('im-preview').disabled = false;
   }
@@ -526,7 +529,6 @@ async function startRemoval(): Promise<void> {
     const input = readInputs('im');
     setStatus('im-status', 'Finding copied comments…');
     const res = await getComments(input.link, input.token, waitStatus('im-status', 'finding copied comments'));
-    rememberToken(input.link.apiHost, input.token, input.remember);
     const groups = groupCopied(res.comments || []);
     if (!groups.length) {
       setStatus('im-status', { kind: 'info', title: 'Nothing to remove', body: 'This file has no copied comments.' });
@@ -546,7 +548,7 @@ async function startRemoval(): Promise<void> {
       ? 'Remove ' + total + (total === 1 ? ' comment' : ' comments') : 'Remove my copied comments';
     showRemoveConfirm(true);
   } catch (err) {
-    setStatus('im-status', { kind: 'error', title: 'Couldn’t check for copied comments', body: messageOf(err) });
+    setStatus('im-status', failure(err, 'Couldn’t check for copied comments'));
   } finally {
     buttonEl('im-remove-start').disabled = false;
   }
@@ -763,18 +765,20 @@ async function runImport(): Promise<void> {
       missing.length ? ['Missing after check', missing.length] : null,
       check.misplaced.length ? ['Replies under the wrong thread', check.misplaced.length] : null,
     ]);
+    // For whoever maintains the plugin: how Figma changed the text. Users get the list below.
     lost.concat(altered.filter((a) => a.recognized)).slice(0, 3).forEach((a) => {
       console.warn('Figma changed comment ' + a.id + (a.recognized ? '' : ' (not recognized)') +
         '.\n--- sent ---\n' + a.sent + '\n--- saved ---\n' + a.saved);
     });
-    logMisplaced(plan, check.misplaced);
     const s1 = (n: number, one: string, many: string) => n + ' ' + (n === 1 ? one : many);
     if (lost.length) {
       setStatus('im-status', { kind: 'error', title: 'Don’t run Import again on this file',
         body: 'Figma saved ' + s1(lost.length, 'comment', 'comments') + ' with different text ' +
           'from what the plugin sent, so the plugin can’t recognize ' + (lost.length === 1 ? 'it' : 'them') +
           ' as copied. Running Import again would post ' + (lost.length === 1 ? 'it' : 'them') + ' a second time.',
-        note: 'The comments are in the file; check that they read correctly. Examples of the change are in the plugin’s developer console.' });
+        note: (lost.length === 1 ? 'The comment is' : 'The comments are') + ' in the file; check that ' +
+          (lost.length === 1 ? 'it reads' : 'they read') + ' correctly:',
+        items: lost.map((a) => describeCopy(a.sent)) });
     } else if (ok) {
       setStatus('im-status', { kind: 'success', title: 'Import complete',
         body: (plan.counts.roots + plan.counts.replies === 1 ? 'The comment is in this file.'
@@ -785,7 +789,8 @@ async function runImport(): Promise<void> {
           missing.length ? s1(missing.length, 'comment isn’t', 'comments aren’t') + ' in this file. This is usually a brief ' +
             'network or Figma hiccup. Click **Preview**, then **Post comments** again; comments already copied are skipped.' : '',
           check.misplaced.length ? misplacedHelp(check.misplaced.length) : '',
-        ].filter(Boolean).join('\n\n') });
+        ].filter(Boolean).join('\n\n'),
+        items: misplacedList(plan, check.misplaced) });
     }
   } catch (err) {
     setStatus('im-status', { kind: 'error', title: 'Import stopped', body: messageOf(err),
@@ -836,6 +841,11 @@ IMPORT_INPUTS.forEach((id) => {
     setStatus('im-status', { kind: 'info', body: 'Something changed since **Preview**. Click **Preview** again to update the numbers.' });
   });
 });
+// A banner while offline; every action needs Figma's API.
+function showOffline(): void { $('offline').hidden = navigator.onLine; }
+window.addEventListener('online', showOffline);
+window.addEventListener('offline', showOffline);
+showOffline();
 $('ex-run').onclick = runExport;
 $('ex-again').onclick = () => { if (lastExport) download(lastExport); };
 $('im-preview').onclick = runPreview;
@@ -847,5 +857,3 @@ $('im-remove-cancel').onclick = () => {
   showRemoveConfirm(false);
   setStatus('im-status', { kind: 'info', body: 'Nothing was removed.' });
 };
-wireToken('ex-link', 'ex-token');
-wireToken('im-link', 'im-token');

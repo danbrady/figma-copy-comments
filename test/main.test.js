@@ -62,9 +62,16 @@ test('startup opens at the setup-screen height on first run, and the full height
   assert.equal(first.sent[0].type, 'init');
   assert.equal(first.sent[0].welcomeHidden, false);
 
-  const later = await start({ storage: { 'welcome:hidden': true, 'token:gov': 'figd_x' } });
+  const later = await start({ storage: { 'welcome:hidden': true } });
   assert.equal(later.calls.showUI[0].height, 600);
-  assert.equal(later.sent[0].tokens['https://api.figma-gov.com'], 'figd_x');
+});
+
+test('tokens are never stored, and ones saved by earlier versions are cleared at startup', async () => {
+  const p = await start({ storage: { 'token:commercial': 'figd_old', 'token:gov': 'figd_gov' } });
+  assert.equal('tokens' in p.sent[0], false);
+  assert.deepEqual(p.calls.storageDeleted.sort(), ['token:commercial', 'token:gov']);
+  await p.figma.ui.onmessage({ type: 'save-token', host: 'https://api.figma.com', token: 'figd_x' });
+  assert.deepEqual(p.calls.storageSet, {});
 });
 
 test('locate records page, path, type, and position, and null for missing nodes', async () => {
@@ -91,15 +98,6 @@ test('resolve keeps the same id when name and type match, else walks page and pa
     '8:8': null,
   } });
   assert.deepEqual(plain(res.result), { '2:2': '2:2', '2:9': '2:2', '7:7': '2:1', '7:8': null, '7:9': null, '8:8': null });
-});
-
-test('tokens are stored per Figma site and cleared when empty; unknown hosts are ignored', async () => {
-  const p = await start();
-  await p.figma.ui.onmessage({ type: 'save-token', host: 'https://api.figma-gov.com', token: 'figd_gov' });
-  await p.figma.ui.onmessage({ type: 'save-token', host: 'https://api.figma.com', token: '' });
-  await p.figma.ui.onmessage({ type: 'save-token', host: 'https://evil.example', token: 'figd_x' });
-  assert.deepEqual(p.calls.storageSet, { 'token:gov': 'figd_gov' });
-  assert.deepEqual(p.calls.storageDeleted, ['token:commercial']);
 });
 
 test('resize clamps the height, and null restores the default', async () => {

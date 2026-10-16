@@ -13,11 +13,10 @@ export type RequestMessage = {
 
 export type UiToMain =
   | RequestMessage
-  | { type: 'save-token'; host: string; token: string }
   | { type: 'save-welcome'; hide: boolean }
   // A measured height fits the window to the content; null restores the default.
   | { type: 'resize'; height: number | null };
 
 export type MainToUi =
-  | { type: 'init'; fileName: string; tokens: Record<string, string>; welcomeHidden: boolean }
+  | { type: 'init'; fileName: string; welcomeHidden: boolean }
   | { type: 'response'; requestId: number; result: unknown; error: string | null };

@@ -63,9 +63,9 @@ Duplicate the file you're copying FROM, or choose **File › Save local copy…*
 ### If something goes wrong
 If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped. Before reporting a comment as missing, the plugin checks the file again for up to 15 seconds, because Figma can take a moment to list new comments. A post that returned an error but did reach the file counts as posted.
 
-If a reply ends up under the wrong thread, Preview and the final message say so; the developer console lists which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
+If a reply ends up under the wrong thread, Preview and the final message say so and list which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
 
-If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. Examples of the change are in the developer console (**Plugins › Development › Show/Hide console**).
+If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. The message lists them, so you can check that they read correctly. How Figma changed the text is in the developer console (**Plugins › Development › Show/Hide console**), for whoever maintains the plugin.
 
 ### 4. Undo an import (if needed)
 To take the copied comments back out of the file you're copying TO:
@@ -79,11 +79,13 @@ Figma only lets people delete their own comments, so the plugin removes the copi
 Restoring an earlier version from the file's version history doesn't remove comments, because Figma doesn't keep comments in version history.
 
 ### Good to know
-**Tokens:** "Remember on this device" stores a token only in this browser or app, through Figma's plugin storage. Untick it on shared computers. Tokens are only ever sent to Figma's API; the manifest blocks every other domain.
+**Tokens:** the plugin never saves your token, so paste it each time you open the plugin. It's kept in memory only while the window is open, and only ever sent to Figma's API; the manifest blocks every other domain. Earlier versions could save a token; the plugin now deletes any saved token when it opens. See [PRIVACY.md](PRIVACY.md) for everything the plugin reads and keeps.
 
 **The exported file:** the `.json` holds every comment's text, the authors' Figma handles, and the names of the frames comments are pinned to. Treat it like the design file: keep it out of public channels, and delete it once the copied comments are checked.
 
-**Notifications:** posting hundreds of comments may notify people who follow the file you're copying TO. Tell them before you run Import.
+**Notifications:** posting hundreds of comments may notify people who follow the file you're copying TO. Figma groups its emails, sending them every 30 minutes, and also shows in-app notifications, which can't be turned off ([notification settings](https://help.figma.com/hc/en-us/articles/360041547813-Adjust-comment-notification-settings)). People @mentioned in the copied text may be notified too, whatever their settings, if Figma turns the mention back into a live one. Preview says how many comments mention someone. Neither Figma API shows who follows a file, so tell the people who work on it before you run Import.
+
+**Offline:** every step needs Figma's API. While you're offline the plugin shows a banner, and Export, Preview, Post, and Remove stop with a message to reconnect.
 
 ---
 
@@ -101,13 +103,15 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | File | Purpose |
 |---|---|
 | `manifest.json` | Plugin manifest. Points at `dist/code.js` and `dist/ui.html`; `networkAccess` allows only the two Figma API hosts |
-| `src/code.ts` | Main thread: node lookups (`getNodeByIdAsync`) and token storage (`clientStorage`). The Plugin API has no comments API. Messages from the UI are checked before use |
+| `src/code.ts` | Main thread: node lookups (`getNodeByIdAsync`) and the setup screen's "don't show again" setting (`clientStorage`). Tokens are never stored; ones saved by earlier versions are deleted at startup. The Plugin API has no comments API. Messages from the UI are checked before use |
 | `src/ui.ts` | UI: the REST calls (`fetch` with `X-Figma-Token`), Export, Preview, Post, and Remove |
 | `src/logic.ts` | Pure, tested logic: message format, matching copies, planning and checking an import |
 | `src/types.ts`, `src/messages.ts` | Shared types: Figma comment data, and the messages between the UI and the main thread |
 | `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
 | `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
 | `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
+| `PRIVACY.md` | The privacy policy: what the plugin reads, where it goes, and what it keeps. Figma requires one for plugins that handle user data |
+| `assets/listing/listing.md` | The Community listing's name, description, tags, and a note for reviewers |
 | `assets/listing/` | Community listing images: `icon.png` (128×128), `cover.png` and three `carousel-*.png` (1920×1080). The carousel shows the real plugin UI from `src/ui.html`, with made-up data |
 | `tsconfig.json`, `tsconfig.ui.json` | Type checking for the main thread (Figma typings, no DOM) and the UI (DOM, no `figma` global) |
 | `eslint.config.mjs` | Figma's recommended ESLint config |
@@ -150,7 +154,7 @@ Make a throwaway file containing:
 - reactions on a thread and on a reply, an @mention, emoji, and one very long comment
 
 Export it, make the copy (see **Make the copy** above), then run Import in the copy. Use a fresh copy for each pilot run, or remove the previous run's copies first (see **Undo an import** above). Check:
-- [ ] The final message says **Import complete** (no missing comments, no misplaced replies). Open a few copied comments with @mentions or blank lines and check that they read correctly; Figma may have rewritten them. If the final message says **Don't run Import again on this file** instead, copy the examples from the developer console, because the plugin's message format needs to change before anyone else imports.
+- [ ] The final message says **Import complete** (no missing comments, no misplaced replies). Open a few copied comments with @mentions or blank lines and check that they read correctly; Figma may have rewritten them. If the final message says **Don't run Import again on this file** instead, copy the examples of the changed text from the developer console, because the plugin's message format needs to change before anyone else imports.
 - [ ] Pins sit on the same frames and offsets. Note which **page** the canvas pins and canvas regions land on, because those positions carry no page.
 - [ ] Headers read correctly, and the long comment wasn't rejected.
 - [ ] Running Import again reports **"Already up to date."**
@@ -160,8 +164,7 @@ Export it, make the copy (see **Make the copy** above), then run Import in the c
 ### 4. Publish and approve
 1. Publish to Figma Community under a team or organization profile ([how-to](https://help.figma.com/hc/en-us/articles/360042293394-Publish-classic-plugins-to-the-Figma-Community)). Figma reviews it first, which takes some time.
    Upload the images from `assets/listing/`: `icon.png` as the icon, `cover.png` as the thumbnail, and the three `carousel-*.png` images, in order, as the carousel.
-   Draft description for the Community page:
-   > Copies comments from one Figma file to another, such as a duplicate, even when the files belong to different Figma accounts. Each copied comment records the original author, time, status, and reactions in its text.
+   Paste the name, description, and tags from [`assets/listing/listing.md`](assets/listing/listing.md). Before publishing, host the "For everyone" guide and [PRIVACY.md](PRIVACY.md) at public addresses and put those links in the description; the form also needs a support contact.
 2. If plugin approval is turned on, have the admins of each organization involved approve the Community link.
 3. Repeat the pilot's Import step **in a browser** with the published version.
 
