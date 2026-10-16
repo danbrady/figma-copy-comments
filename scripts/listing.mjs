@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { chromium } from 'playwright-core';
+import { launchChrome } from './chrome.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'assets/listing/src');
@@ -20,9 +20,7 @@ const IMAGES = [
 ];
 
 const uiHtml = await readFile(join(root, 'src/ui.html'), 'utf8');
-const browser = await chromium.launch(process.env.CHROME_PATH
-  ? { executablePath: process.env.CHROME_PATH }
-  : { channel: 'chrome' });
+const browser = await launchChrome();
 
 try {
   for (const { name, width, height } of IMAGES) {

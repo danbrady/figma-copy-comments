@@ -1,10 +1,13 @@
 // Screenshots every screen and message of the plugin into docs/visual-qa/, by driving the
 // built dist/ui.html in Chrome against a fake Figma (scripts/visual-qa/fake-figma.mjs).
 // Usage: npm run visual-qa. Set CHROME_PATH to use a browser other than Google Chrome.
+// `node scripts/visual-qa/run.mjs <text>` runs only scenarios whose name includes <text>, for
+// checking one screen; it writes screenshots but leaves the committed messages.md alone.
+// Writes png/ and index.html (ignored by git) and messages.md (committed; CI checks it's current).
 import { mkdir, readFile, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { chromium } from 'playwright-core';
+import { launchChrome } from '../chrome.mjs';
 import { BRIDGE, DARK, FakeFigma } from './fake-figma.mjs';
 import { GROUPS, SCENARIOS, TEXT_ONLY } from './scenarios.mjs';
 import { writeReport } from './report.mjs';
@@ -134,9 +137,11 @@ async function uncovered(shots, textOnly) {
   return [...literals].filter((l) => l.length > 3 && !DEV_ONLY.some((d) => l.startsWith(d)) && !seen.includes(l));
 }
 
-await rm(out, { recursive: true, force: true });
+// Start the browser before touching any files, so a failed start changes nothing. A full run
+// starts png/ fresh; a partial run only replaces the screenshots it takes.
+const browser = await launchChrome();
+if (!only) await rm(join(out, 'png'), { recursive: true, force: true });
 await mkdir(join(out, 'png'), { recursive: true });
-const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' });
 const shots = new Map();
 try {
   for (const scenario of SCENARIOS.filter((s) => !only || s.name.includes(only))) {
@@ -148,10 +153,13 @@ try {
 }
 console.log('\n' + shots.size + ' states, ' + shots.size * THEMES.length + ' screenshots in docs/visual-qa/png/');
 
-await writeReport(out, GROUPS, [...shots.values()], TEXT_ONLY, THEMES);
-console.log('docs/visual-qa/index.html and docs/visual-qa/messages.md written');
+// A partial run would shrink the committed messages.md to a few states, so it isn't written.
+if (only) {
+  console.log('Ran only scenarios matching "' + only + '", so index.html and messages.md were left as they were.');
+} else {
+  await writeReport(out, GROUPS, [...shots.values()], TEXT_ONLY, THEMES);
+  console.log('docs/visual-qa/index.html and docs/visual-qa/messages.md written');
 
-if (!only) {
   const missing = await uncovered(shots, TEXT_ONLY);
   if (missing.length) {
     console.log('\nMessages in src/ui.ts no screen reached (add a scenario, or check they still show):');
