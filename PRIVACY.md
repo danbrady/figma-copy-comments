@@ -38,4 +38,4 @@ One setting: whether you chose **Don't show this again** on the setup screen. It
 
 ## Changes and contact
 
-If this policy changes, the effective date above will change too. For questions, use the support contact on the plugin's Figma Community page.
+If this policy changes, the effective date above will change too. For questions, open an issue at [github.com/danbrady/figma-copy-comments/issues](https://github.com/danbrady/figma-copy-comments/issues).
