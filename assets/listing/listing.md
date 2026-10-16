@@ -29,8 +29,13 @@ Copy every comment thread from one Figma file to another: a duplicate, a file yo
 - Images and attachments in comments aren't copied. Copied threads show as open, because Figma's API can't resolve comments; a resolved thread says so in its text.
 - The plugin only talks to Figma's API. It has no servers and collects no analytics.
 
-Setup guide: [public link to the "For everyone" guide]
-Privacy policy: [public link to PRIVACY.md]
+Setup guide: https://danbrady.github.io/figma-copy-comments/
+Privacy policy: https://danbrady.github.io/figma-copy-comments/privacy/
+Help: https://github.com/danbrady/figma-copy-comments/issues
+
+## Support contact
+
+https://github.com/danbrady/figma-copy-comments/issues (the publish form's required support contact)
 
 ## Tags
 

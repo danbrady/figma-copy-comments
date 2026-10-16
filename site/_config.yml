@@ -1,0 +1,15 @@
+# GitHub Pages site for Copy Comments: the setup guide, privacy policy, and support link
+# that the Figma Community listing points to. Built by .github/workflows/pages.yml, which
+# also copies in PRIVACY.md (as privacy.md) and the listing images (as images/).
+title: Copy Comments
+description: A Figma plugin that copies comments from one Figma file to another, even across accounts.
+url: https://danbrady.github.io
+baseurl: /figma-copy-comments
+repository: danbrady/figma-copy-comments
+markdown: kramdown
+kramdown:
+  input: GFM
+  auto_ids: true
+  hard_wrap: false
+exclude:
+  - README.md

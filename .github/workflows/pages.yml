@@ -1,0 +1,50 @@
+name: Pages
+
+# Publishes site/ to GitHub Pages: the setup guide, privacy policy, and support link the
+# Figma Community listing points to. PRIVACY.md and the listing images are copied in at
+# build time, so the published versions always match the repo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - PRIVACY.md
+      - assets/listing/*.png
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy in the privacy policy and images
+        run: |
+          { printf -- '---\nlayout: default\ntitle: Privacy policy\npermalink: /privacy/\n---\n\n'; cat PRIVACY.md; } > site/privacy.md
+          mkdir -p site/images
+          cp assets/listing/icon.png assets/listing/cover.png assets/listing/carousel-*.png site/images/
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./site
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

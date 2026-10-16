@@ -1,0 +1,68 @@
+/* Layout: one readable column of guide text under a slim top bar; screenshots break out a little wider. */
+:root {
+  --bg: #ffffff;
+  --surface: #f4f7fb;
+  --fg: #16202c;
+  --muted: #566273;
+  --line: #dfe5ec;
+  --accent: #0a6fc2;
+  --brand: #0d99ff;
+  --code-bg: #eef3f9;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --measure: 68ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161c; --surface: #1a2029; --fg: #e9eef4; --muted: #9ba7b6; --line: #2b3440;
+    --accent: #6bbcf7; --brand: #0d99ff; --code-bg: #212935; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 var(--font-body); }
+a { color: var(--accent); text-underline-offset: 0.15em; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 8px; background: var(--bg); padding: 4px 8px; z-index: 2; }
+
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px max(16px, calc((100% - 960px) / 2)); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 700; }
+.brand img { border-radius: 7px; }
+.bar nav { display: flex; gap: 20px; font-size: 15px; }
+.bar nav a { color: var(--muted); text-decoration: none; }
+.bar nav a:hover, .bar nav a[aria-current="page"] { color: var(--fg); }
+
+main { padding: 40px 16px 64px; }
+main > * { max-width: var(--measure); margin-inline: auto; }
+main > .wide { max-width: 960px; }
+
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(32px, 6vw, 44px); margin-block: 0 16px; }
+h2 { font-size: 26px; margin-block: 56px 12px; padding-top: 8px; }
+h3 { font-size: 19px; margin-block: 32px 8px; }
+p, ul, ol, table, pre { margin-block: 0 16px; }
+li + li { margin-top: 6px; }
+strong { font-weight: 600; }
+code { font-family: var(--font-mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 14px 16px; border-radius: 10px; overflow-x: auto; font-size: 14px; line-height: 1.55; }
+pre code { background: none; padding: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin-block: 40px; }
+
+/* Tables scroll on their own at phone width instead of widening the page. */
+table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; }
+
+.lede { font-size: 19px; color: var(--muted); }
+.cover, figure { margin-block: 24px 32px; }
+.cover img, figure img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.note > :last-child { margin-bottom: 0; }
+
+footer { border-top: 1px solid var(--line); padding: 24px 16px 40px; color: var(--muted); font-size: 14px; text-align: center; }
+footer p { margin: 4px auto; max-width: var(--measure); }

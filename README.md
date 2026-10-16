@@ -1,5 +1,7 @@
 # Copy Comments
 
+**User guide:** [danbrady.github.io/figma-copy-comments](https://danbrady.github.io/figma-copy-comments/) · **Privacy policy:** [PRIVACY.md](PRIVACY.md) · **Help:** [GitHub issues](https://github.com/danbrady/figma-copy-comments/issues)
+
 A Figma plugin that copies comments from one Figma file to another, such as a duplicate of the file, even when the two files belong to different Figma accounts.
 
 Duplicating a file, or saving it as a `.fig` and importing it, **leaves its comments behind**. This plugin fills that gap.
@@ -112,6 +114,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `scripts/visual-qa/` | `npm run visual-qa`: drives the built UI against a fake Figma (`fake-figma.mjs`) through every scenario (`scenarios.mjs`) and writes the report (`report.mjs`) |
 | `docs/visual-qa/` | Every screen and message, generated: `index.html` (screenshots in light and dark, with what makes each appear), `messages.md` (all message text), and `png/` |
 | `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
+| `site/` | The GitHub Pages site the Community listing links to: the user guide (`index.md`), layout, and styles. `.github/workflows/pages.yml` builds it with Jekyll and adds `PRIVACY.md` and the listing images |
 | `PRIVACY.md` | The privacy policy: what the plugin reads, where it goes, and what it keeps. Figma requires one for plugins that handle user data |
 | `assets/listing/listing.md` | The Community listing's name, description, tags, and a note for reviewers |
 | `assets/listing/` | Community listing images: `icon.png` (128×128), `cover.png` and three `carousel-*.png` (1920×1080). The carousel shows the real plugin UI from `src/ui.html`, with made-up data |
@@ -167,7 +170,7 @@ Export it, make the copy (see **Make the copy** above), then run Import in the c
 ### 4. Publish and approve
 1. Publish to Figma Community under a team or organization profile ([how-to](https://help.figma.com/hc/en-us/articles/360042293394-Publish-classic-plugins-to-the-Figma-Community)). Figma reviews it first, which takes some time.
    Upload the images from `assets/listing/`: `icon.png` as the icon, `cover.png` as the thumbnail, and the three `carousel-*.png` images, in order, as the carousel.
-   Paste the name, description, and tags from [`assets/listing/listing.md`](assets/listing/listing.md). Before publishing, host the "For everyone" guide and [PRIVACY.md](PRIVACY.md) at public addresses and put those links in the description; the form also needs a support contact.
+   Paste the name, description, tags, and support contact from [`assets/listing/listing.md`](assets/listing/listing.md). Its links point to the user guide and privacy policy on GitHub Pages, which `.github/workflows/pages.yml` publishes from `site/` and `PRIVACY.md`.
 2. If plugin approval is turned on, have the admins of each organization involved approve the Community link.
 3. Repeat the pilot's Import step **in a browser** with the published version.
 
