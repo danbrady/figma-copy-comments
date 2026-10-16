@@ -1,15 +1,13 @@
 // Copy Comments — main thread.
 // The Plugin API has no comments API, so all REST calls happen in the UI (src/ui.ts).
-// This side only does what needs the document: node lookups, token storage,
-// and remembering whether the welcome screen was dismissed.
+// This side only does what needs the document: node lookups, and remembering whether
+// the welcome screen was dismissed. Tokens are never stored.
 import type { MainToUi, Requests, UiToMain } from './messages';
 import type { Locator, Locators } from './types';
 
 const WELCOME_KEY = 'welcome:hidden';
-const TOKEN_KEYS: Record<string, string> = {
-  'https://api.figma.com': 'token:commercial',
-  'https://api.figma-gov.com': 'token:gov',
-};
+// Where earlier versions saved tokens. Cleared at startup, so none are left on the device.
+const OLD_TOKEN_KEYS = ['token:commercial', 'token:gov'];
 
 const WIDTH = 440;
 const HEIGHT = 600;
@@ -24,18 +22,15 @@ function post(message: MainToUi): void {
 // Settings are read before the window opens, so it opens at the right height.
 (async function init() {
   let welcomeHidden = false;
-  const tokens: Record<string, string> = {};
   try {
     welcomeHidden = !!(await figma.clientStorage.getAsync(WELCOME_KEY));
-    for (const host of Object.keys(TOKEN_KEYS)) {
-      tokens[host] = (await figma.clientStorage.getAsync(TOKEN_KEYS[host])) || '';
-    }
+    for (const key of OLD_TOKEN_KEYS) await figma.clientStorage.deleteAsync(key);
   } catch {
     // Storage is a convenience; open the window either way.
   }
   figma.showUI(__html__, { width: WIDTH, height: welcomeHidden ? HEIGHT : WELCOME_HEIGHT, themeColors: true });
   figma.ui.onmessage = handleMessage;
-  post({ type: 'init', fileName: figma.root.name, tokens, welcomeHidden });
+  post({ type: 'init', fileName: figma.root.name, welcomeHidden });
 })();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,12 +44,7 @@ async function handleMessage(raw: unknown): Promise<void> {
   const msg = raw as Partial<UiToMain> & Record<string, unknown>;
   const requestId = typeof msg.requestId === 'number' ? msg.requestId : 0;
   try {
-    if (msg.type === 'save-token') {
-      const key = TOKEN_KEYS[String(msg.host)];
-      if (!key) return;
-      if (msg.token) await figma.clientStorage.setAsync(key, String(msg.token));
-      else await figma.clientStorage.deleteAsync(key);
-    } else if (msg.type === 'save-welcome') {
+    if (msg.type === 'save-welcome') {
       if (msg.hide) await figma.clientStorage.setAsync(WELCOME_KEY, true);
       else await figma.clientStorage.deleteAsync(WELCOME_KEY);
     } else if (msg.type === 'resize') {

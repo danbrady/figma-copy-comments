@@ -328,6 +328,45 @@ test('findAltered flags posts whose saved text differs from what was sent', () =
   assert.equal(lost[0].recognized, false);
 });
 
+test('describeCopy names a copied comment by its original author, time, and first line', () => {
+  assert.equal(L.describeCopy('[Copied comment]\nCan we bump the contrast?\nSecond line\n———\nA · Jan 1, 2026, 7:00:00 AM ET\n✅ Resolved Jan 2, 2026, 7:00:00 AM ET'),
+    'A · Jan 1, 2026, 7:00:00 AM ET: “Can we bump the contrast?”');
+  // Long first lines are cut short.
+  assert.equal(L.describeCopy('[Copied reply]\n' + 'x'.repeat(80) + '\n———\nB · Jan 1, 2026, 8:00:00 AM ET'),
+    'B · Jan 1, 2026, 8:00:00 AM ET: “' + 'x'.repeat(59) + '…”');
+  // A comment with no text, and one that isn't a copy.
+  assert.equal(L.describeCopy('[Copied reply]\n———\nB · Jan 1, 2026, 8:00:00 AM ET'), 'B · Jan 1, 2026, 8:00:00 AM ET');
+  assert.equal(L.describeCopy('just a comment'), '“just a comment”');
+});
+
+test('countMentions counts comments still to post whose text @mentions someone', () => {
+  const data = sampleExport();
+  const set = (id, message) => { data.comments.find((c) => c.id === id).message = message; };
+  set('10', 'Thoughts, @Alex Rivera?');
+  set('11', '@sam can you check');
+  // Not mentions: an email address, and an @ on its own.
+  set('20', 'Send it to design@example.com');
+  set('30', 'Meet @ 3pm');
+  // A reply whose thread is missing is posted as its own thread, so it counts too.
+  set('40', 'orphan @lee');
+  const plan = L.buildPlan(data, [], { '1:2': '1:2' });
+  assert.equal(L.countMentions(plan), 3);
+  // Comments already copied won't be posted again, so they don't count.
+  const rerun = L.buildPlan(data, [{ id: 'a', message: plan.threads[0].message }], { '1:2': '1:2' });
+  assert.equal(L.countMentions(rerun), 2);
+  // Skipped threads aren't posted; thread 20 had no mention, so the count is unchanged.
+  const skipped = L.buildPlan(data, [], { '1:2': '1:2' }, { skipResolved: true });
+  assert.equal(L.countMentions(skipped), 3);
+});
+
+test('misplacedList says which thread each misplaced reply belongs under', () => {
+  const plan = L.buildPlan(sampleExport(), [], { '1:2': '1:2' });
+  assert.deepEqual(plain(L.misplacedList(plan, ['30'])), [
+    'C · Jan 2, 2026, 7:00:00 PM ET: “r2”, which belongs under A · Dec 31, 2025, 7:00:00 PM ET: “first”',
+  ]);
+  assert.deepEqual(plain(L.misplacedList(plan, [])), []);
+});
+
 test('buildPlan recognizes copies whose text Figma changed, by author and time', () => {
   const data = sampleExport();
   data.comments.find((c) => c.id === '10').message = 'Hey @Pat Morgan\n\nsecond paragraph';

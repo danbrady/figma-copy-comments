@@ -95,6 +95,11 @@
     margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--tone) 25%, var(--bg));
     color: var(--text-2); font-size: 11px; white-space: pre-wrap;
   }
+  /* Comments a message is about, so they can be found in the file. */
+  .status-list { margin: 6px 0 0; padding-left: 16px; font-size: 11px; overflow-wrap: anywhere; }
+  .status-list li + li { margin-top: 4px; }
+  /* Shown above everything while offline. */
+  #offline { margin: 0 0 12px; }
   /* A card like the token cards: border, 8px corners, the secondary background, 12px side padding.
      Separate borders, so the corners can round; rows are divided by a top border instead. */
   .summary {
@@ -139,6 +144,12 @@
 </style>
 
 
+<!-- OFFLINE: shown while the browser or app has no connection -->
+<div class="status warning" id="offline" role="status" hidden>
+  <span class="status-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.13 1.5a1 1 0 0 1 1.74 0l6.95 12.5A1 1 0 0 1 14.95 15.5H1.05a1 1 0 0 1-.87-1.5z" fill="currentColor"/><path d="M8 5.8v4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="12.6" r="1" fill="#fff"/></svg></span>
+  <div class="status-text"><strong class="status-title">You’re offline</strong>
+    <div class="status-body">Copy Comments needs an internet connection to reach Figma’s API. Reconnect to export, preview, post, or remove comments.</div></div>
+</div>
 <!-- WELCOME: shown on first run, until dismissed with "Don't show this again" -->
 <section class="welcome" id="panel-welcome" hidden>
   <h2>Before you start, make a personal access token</h2>
@@ -164,7 +175,7 @@
       </div>
       <span class="muted">Using one token for both? Give it the Import token's scopes.</span>
     </li>
-    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the <strong>Export</strong> or <strong>Import</strong> tab.</li>
+    <li>Copy the token value right away and keep it handy. Figma shows it only once, and you'll paste it into the <strong>Export</strong> or <strong>Import</strong> tab. The plugin never saves it, so paste it each time you open the plugin.</li>
   </ol>
   <p class="muted">Treat tokens like passwords.
     <a href="https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens" target="_blank">Figma's token guide</a></p>
@@ -193,7 +204,6 @@
       <button class="link token-guide" type="button">Token setup guide</button>
     </div>
     <input type="password" id="ex-token" placeholder="figd_…" autocomplete="off">
-    <label class="check"><input type="checkbox" id="ex-remember" checked> Remember on this device</label>
   </div>
   <button class="primary" id="ex-run">Export comments</button>
   <button class="secondary" id="ex-again" hidden>Download again</button>
@@ -215,7 +225,6 @@
       <button class="link token-guide" type="button">Token setup guide</button>
     </div>
     <input type="password" id="im-token" placeholder="figd_…" autocomplete="off">
-    <label class="check"><input type="checkbox" id="im-remember" checked> Remember on this device</label>
   </div>
   <div class="step">
     <label for="im-file">Exported comments file (.json)</label>
