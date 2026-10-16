@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cover</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=block">
+<link rel="stylesheet" href="listing.css">
+<style>
+  body { --w: 1920px; --h: 1080px; }
+
+  .intro { position: absolute; left: 140px; top: 0; bottom: 0; width: 760px; display: flex; flex-direction: column; justify-content: center; }
+  .intro img { width: 112px; height: 112px; border-radius: 26px; margin-bottom: 48px; box-shadow: 0 8px 24px rgba(13, 153, 255, 0.3); }
+  .intro h1 { margin: 0 0 28px; font-size: 128px; line-height: 1; font-weight: 700; letter-spacing: -0.035em; }
+  .intro p { margin: 0 0 48px; font-size: 40px; line-height: 1.35; color: var(--text-2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 14px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--border); font-size: 23px; font-weight: 600;
+  }
+  .chip svg { width: 24px; height: 24px; color: var(--success); }
+
+  /* Two design files, each with a frame and pins in the same places. */
+  .file { position: absolute; width: 620px; height: 400px; background: var(--bg); border-radius: 20px; box-shadow: var(--shadow); }
+  .file header {
+    height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 24px;
+    border-bottom: 1px solid var(--border); font-size: 22px; font-weight: 600;
+  }
+  .file header .tag { padding: 5px 12px; border-radius: 6px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; }
+  .from header .tag { background: var(--canvas); color: var(--text-2); }
+  .to header .tag { background: var(--brand-tint); color: var(--brand-text); }
+  .file .name { color: var(--text); }
+  .file .dup { color: var(--text-2); font-weight: 400; }
+  .file .canvas { position: absolute; inset: 64px 0 0; background: var(--canvas); border-radius: 0 0 20px 20px; }
+  .frame { position: absolute; left: 60px; top: 46px; width: 300px; height: 250px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+  .frame-label { position: absolute; left: 60px; top: 20px; font-size: 15px; color: var(--text-2); }
+  .frame i { position: absolute; left: 24px; right: 24px; height: 14px; border-radius: 7px; background: #ececec; }
+  .frame i.btn { right: auto; width: 120px; height: 40px; border-radius: 8px; background: var(--brand); opacity: 0.85; }
+  .frame2 { position: absolute; left: 400px; top: 46px; width: 160px; height: 250px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+  .frame2 i { position: absolute; left: 20px; right: 20px; height: 14px; border-radius: 7px; background: #ececec; }
+
+  .from { left: 1060px; top: 120px; }
+  .to { left: 1140px; top: 590px; }
+
+  /* Where the moving pin lands in the copy. */
+  .pin.ghost { background: transparent; box-shadow: none; border: 3px dashed var(--brand); }
+
+  .arc { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="intro">
+  <img src="../icon.png" alt="">
+  <h1>Copy Comments</h1>
+  <p>Copy comment threads from one Figma file to another, even across accounts.</p>
+  <div class="chips">
+    <span class="chip"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="currentColor"/><path d="M4.6 8.3l2.2 2.2 4.6-4.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Replies and pins</span>
+    <span class="chip"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="currentColor"/><path d="M4.6 8.3l2.2 2.2 4.6-4.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Author and time</span>
+    <span class="chip"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="currentColor"/><path d="M4.6 8.3l2.2 2.2 4.6-4.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Safe to re-run</span>
+  </div>
+</div>
+
+<div class="file from">
+  <header><span class="tag">FROM</span><span class="name">Checkout redesign</span></header>
+  <div class="canvas">
+    <span class="frame-label">Payment</span>
+    <div class="frame"><i style="top:28px;width:55%"></i><i style="top:60px"></i><i style="top:88px;right:80px"></i><i class="btn" style="top:180px"></i></div>
+    <div class="frame2"><i style="top:28px"></i><i style="top:56px;right:50px"></i></div>
+    <div class="pin" style="left:300px;top:70px"><span style="background:#9747ff">AR</span></div>
+    <div class="pin" style="left:150px;top:180px"><span style="background:#f24822">BO</span></div>
+    <div class="pin" style="left:500px;top:150px"><span style="background:#14ae5c">CK</span></div>
+  </div>
+</div>
+
+<div class="file to">
+  <header><span class="tag">TO</span><span class="name">Checkout redesign <span class="dup">(copy)</span></span></header>
+  <div class="canvas">
+    <span class="frame-label">Payment</span>
+    <div class="frame"><i style="top:28px;width:55%"></i><i style="top:60px"></i><i style="top:88px;right:80px"></i><i class="btn" style="top:180px"></i></div>
+    <div class="frame2"><i style="top:28px"></i><i style="top:56px;right:50px"></i></div>
+    <div class="pin" style="left:300px;top:70px"><span style="background:#9747ff">AR</span></div>
+    <div class="pin" style="left:150px;top:180px"><span style="background:#f24822">BO</span></div>
+    <div class="pin ghost" style="left:500px;top:150px"></div>
+  </div>
+</div>
+
+<!-- The third pin, on its way from the FROM file to the same spot in the TO file. -->
+<svg class="arc" viewBox="0 0 1920 1080" aria-hidden="true">
+  <path d="M1652 344 C 1840 400, 1860 650, 1712 788" fill="none" stroke="#0d99ff" stroke-width="5"
+    stroke-dasharray="2 14" stroke-linecap="round"/>
+  <path d="M1736 784L1712 788L1716 764" fill="none" stroke="#0d99ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+<div class="pin" style="left:1790px;top:470px;transform:scale(1.15)"><span style="background:#14ae5c">CK</span></div>
+
+<script src="plugin-window.js"></script>
+</body>
+</html>

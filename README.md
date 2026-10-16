@@ -107,6 +107,8 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `src/types.ts`, `src/messages.ts` | Shared types: Figma comment data, and the messages between the UI and the main thread |
 | `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
 | `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
+| `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
+| `assets/listing/` | Community listing images: `icon.png` (128×128), `cover.png` and three `carousel-*.png` (1920×1080). The carousel shows the real plugin UI from `src/ui.html`, with made-up data |
 | `tsconfig.json`, `tsconfig.ui.json` | Type checking for the main thread (Figma typings, no DOM) and the UI (DOM, no `figma` global) |
 | `eslint.config.mjs` | Figma's recommended ESLint config |
 | `test/logic.test.js` | Unit tests for `src/logic.ts`, plus a check that the built `dist/ui.html` script parses |
@@ -125,6 +127,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `npm run lint` | Runs Figma's ESLint rules on `src/` |
 | `npm test` | Builds, then runs the tests |
 | `npm run check` | All three checks: typecheck, lint, and tests |
+| `npm run listing` | Re-renders the images in `assets/listing/` with your installed Google Chrome (set `CHROME_PATH` to use another). Run it after changing the UI |
 
 ### 1. Load the plugin
 Development plugins only work in the **desktop app** ([docs](https://help.figma.com/hc/en-us/articles/360039958874-Make-plugins-for-the-Figma-Community)). The plugin ID is already in `manifest.json`; keep it, because Community publishing and admin approvals are tied to it.
@@ -156,6 +159,7 @@ Export it, make the copy (see **Make the copy** above), then run Import in the c
 
 ### 4. Publish and approve
 1. Publish to Figma Community under a team or organization profile ([how-to](https://help.figma.com/hc/en-us/articles/360042293394-Publish-classic-plugins-to-the-Figma-Community)). Figma reviews it first, which takes some time.
+   Upload the images from `assets/listing/`: `icon.png` as the icon, `cover.png` as the thumbnail, and the three `carousel-*.png` images, in order, as the carousel.
    Draft description for the Community page:
    > Copies comments from one Figma file to another, such as a duplicate, even when the files belong to different Figma accounts. Each copied comment records the original author, time, status, and reactions in its text.
 2. If plugin approval is turned on, have the admins of each organization involved approve the Community link.
