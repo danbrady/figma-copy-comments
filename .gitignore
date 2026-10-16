@@ -6,3 +6,8 @@ dist/
 
 .DS_Store
 node_modules/
+
+# Copied into site/ by .github/workflows/pages.yml at build time.
+site/privacy.md
+site/images/
+site/_site/
