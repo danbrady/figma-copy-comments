@@ -85,6 +85,9 @@ function sleep(ms: number): Promise<void> {
 
 function friendlyError(status: number, detail: string, method: string): string {
   const scope = method === 'GET' ? 'file_comments:read' : 'file_comments:write';
+  // Figma answers 401 for a token it doesn't recognize: mistyped, cut short, expired, or deleted.
+  if (status === 401) return 'Figma didn\u2019t accept the token (401). Check that you pasted all of it, and that it hasn\u2019t ' +
+    'expired or been deleted.';
   if (status === 403) return 'Figma refused the request (403). Check that the token was made by an account that can open ' +
     'this file, hasn\u2019t expired, and has the scope ' + scope + '.';
   if (status === 404) return 'File not found (404). Check the link.';
@@ -133,7 +136,7 @@ async function api<T = unknown>(apiHost: string, token: string, method: Method, 
         'or browser may be blocking this plugin from calling Figma\u2019s API.', { fatal: true });
     }
     if (res.status === 429) {
-      // Retry-After is often unreadable from a plugin (CORS), so there's a fallback schedule.
+      // Figma exposes Retry-After to plugins (Access-Control-Expose-Headers); when it's missing, use the fallback schedule.
       const retry = Number(res.headers.get('Retry-After'));
       if (retry > MAX_WAIT_SECONDS) {
         throw new PluginError('Figma asked to wait ' + formatWait(retry) + ' before it takes more requests from this account. ' + SEAT_NOTE,

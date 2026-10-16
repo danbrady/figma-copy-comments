@@ -163,11 +163,11 @@ export const SCENARIOS = [
     await h.shot(EXPORT_ERRORS, 'export-no-token', 'No token', '**Export comments** was clicked without a token.');
   } },
   ...[
-    [401, 'export-401', 'Token not accepted (401)', 'Figma rejected the token, for example because it was mistyped or revoked. Any status other than 400, 403, and 404 uses this wording, with Figma’s own message.', { status: 401, body: { status: 401, err: 'Invalid token' } }],
+    [401, 'export-401', 'Token not accepted (401)', 'Figma didn’t recognize the token: it was mistyped, cut short when pasting, expired, or deleted.', { status: 401, body: { status: 401, err: 'Invalid token' } }],
     [400, 'export-400', 'Request rejected (400)', 'Figma rejected the request as malformed. Shows Figma’s own reason. Not expected in normal use.', { status: 400, body: { status: 400, err: 'Invalid file key' } }],
     [403, 'export-403', 'Not allowed (403)', 'The token can’t open the file, has expired, or is missing the scope.', { status: 403, body: { status: 403, err: 'Forbidden' } }],
     [404, 'export-404', 'File not found (404)', 'The link’s file doesn’t exist, or the token’s account can’t see it.', { status: 404, body: { status: 404, err: 'Not found' } }],
-    [500, 'export-500', 'Figma error (500)', 'Figma’s API had a problem. Shows Figma’s own message.', { status: 500, body: { status: 500, err: 'Internal server error' } }],
+    [500, 'export-500', 'Figma error (500)', 'Figma’s API had a problem. Any status without its own wording (all but 400, 401, 403, and 404) uses this one, with Figma’s own message.', { status: 500, body: { status: 500, err: 'Internal server error' } }],
   ].map(([code, id, name, when, response]) => ({ name: 'export ' + code, run: async (h) => {
     h.fake.hooks.respond = () => response;
     await exportWith(h);
