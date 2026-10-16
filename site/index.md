@@ -87,6 +87,7 @@ Restoring an earlier version from the file's version history doesn't remove comm
 - **A reply is under the wrong thread:** Preview and the final message say so and list which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
 - **"Don't run Import again on this file":** don't. Figma changed some comments so much when saving them that a re-run can't recognize them and would post them twice. The message lists them so you can check they read correctly.
 - **"You're offline" or "Could not reach Figma's API":** every step needs an internet connection. Reconnect, or ask your IT team whether your network blocks `api.figma.com`.
+- **"Figma didn't accept the token (401)":** the token was mistyped, cut short when you pasted it, expired, or deleted. Paste it again, or make a new one.
 - **"Figma refused the request (403)":** check that the token was made by an account that can open the file, hasn't expired, and has the scopes in the table above.
 
 ## What gets copied

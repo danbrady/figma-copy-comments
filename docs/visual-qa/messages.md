@@ -153,11 +153,11 @@ Paste a personal access token.
 
 ### Token not accepted (401)
 
-*When:* Figma rejected the token, for example because it was mistyped or revoked. Any status other than 400, 403, and 404 uses this wording, with Figma’s own message.
+*When:* Figma didn’t recognize the token: it was mistyped, cut short when pasting, expired, or deleted.
 
 **Error: Export failed**
 
-Figma returned 401: Invalid token
+Figma didn’t accept the token (401). Check that you pasted all of it, and that it hasn’t expired or been deleted.
 
 *Buttons:* Token setup guide · Export comments
 
@@ -201,7 +201,7 @@ File not found (404). Check the link.
 
 ### Figma error (500)
 
-*When:* Figma’s API had a problem. Shows Figma’s own message.
+*When:* Figma’s API had a problem. Any status without its own wording (all but 400, 401, 403, and 404) uses this one, with Figma’s own message.
 
 **Error: Export failed**
 
