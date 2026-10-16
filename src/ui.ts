@@ -114,8 +114,7 @@ function postsPerMinute(): number {
 type Method = 'GET' | 'POST' | 'DELETE';
 
 function offlineError(): PluginError {
-  return new PluginError('You\u2019re offline. Copy Comments needs an internet connection to reach Figma\u2019s API. ' +
-    'Reconnect, then try again.', { fatal: true, title: 'You\u2019re offline', kind: 'warning' });
+  return new PluginError('Copy Comments needs an internet connection to reach Figma\u2019s API. Reconnect, then try again.', { fatal: true, title: 'You\u2019re offline', kind: 'warning' });
 }
 
 // onWait(seconds), if given, is called before sleeping on a rate limit, so the status can say so.
