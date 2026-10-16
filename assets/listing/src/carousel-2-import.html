@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Carousel 2: Import</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=block">
+<link rel="stylesheet" href="listing.css">
+<style>
+  body { --w: 1920px; --h: 1080px; }
+  .plugin-window { left: 1080px; top: 60px; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <span class="step-badge"><b>2</b>Import</span>
+  <h1>Preview, then post them to the copy</h1>
+  <p>Run the plugin in the file you're copying <strong>TO</strong>. Preview shows what will be posted and skips anything already copied.</p>
+  <p>Posting again is safe, and <strong>Remove copied comments</strong> undoes an import.</p>
+</div>
+<div class="wordmark"><img src="../icon.png" alt="">Copy Comments</div>
+
+<div class="plugin-window" data-panel="import" data-scale="1.4" data-scroll-to=".step:has(#im-skip-resolved)"></div>
+
+<script>
+  window.demo = {
+    import(doc) {
+      doc.getElementById('im-link').value = 'https://www.figma.com/design/P7wM2r/Checkout-redesign-copy';
+      doc.getElementById('im-token').value = 'figd_demo_token_value';
+      // A file input can't be given a value, so show the chosen file's name beside it.
+      const file = doc.getElementById('im-file');
+      const chosen = doc.createElement('span');
+      chosen.textContent = 'Checkout redesign - comments.json';
+      chosen.style.cssText = 'display:block;padding:7px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-2)';
+      file.replaceWith(chosen);
+      doc.getElementById('im-skip-resolved').checked = false;
+      doc.getElementById('im-skip-deleted').checked = true;
+      doc.getElementById('im-run').hidden = false;
+      PluginUI.renderSummary(doc, 'im-summary', [
+        ['From', 'Checkout redesign'],
+        ['Threads', 77],
+        ['Replies', 139],
+        ['Resolved threads (noted in text)', 28],
+        ['Skipped: threads on deleted frames and their replies', 20],
+        ['Comments to post now', 216],
+      ]);
+      PluginUI.setStatus(doc, 'im-status', { kind: 'info', title: 'Ready to post 216 comments',
+        body: 'They’ll be posted under your name, about 40 a minute, so this takes about 6 minutes. ' +
+          'Keep this window open while posting. Review the numbers, then click <strong>Post comments</strong>.' });
+    },
+  };
+</script>
+<script src="plugin-window.js"></script>
+</body>
+</html>
