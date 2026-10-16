@@ -6,94 +6,17 @@ A Figma plugin that copies comments from one Figma file to another, such as a du
 
 Duplicating a file, or saving it as a `.fig` and importing it, **leaves its comments behind**. This plugin fills that gap.
 
-## What gets copied
-Every thread and reply is re-posted in the file you're copying TO, in its original order. Each starts with a label, then the original text, then its details:
+## Using the plugin
+How to use the plugin lives in one place, the [user guide](https://danbrady.github.io/figma-copy-comments/), so it can't drift from this README:
 
-```
-[Copied comment]
-Original comment text
-———
-alex.rivera · Oct 1, 2026, 9:52:14 AM ET
-✅ Resolved Oct 1, 2026, 1:20:05 PM ET
-Reactions: :+1: ×3 (A. Lee, B. Ortiz, C. Kim)
-```
+- [Before you start](https://danbrady.github.io/figma-copy-comments/#before-you-start): making personal access tokens, and which scopes and seats you need
+- [Export](https://danbrady.github.io/figma-copy-comments/#1-export), [make the copy](https://danbrady.github.io/figma-copy-comments/#2-make-the-copy), and [Import](https://danbrady.github.io/figma-copy-comments/#3-import)
+- [Undo an import](https://danbrady.github.io/figma-copy-comments/#undo-an-import) and [If something goes wrong](https://danbrady.github.io/figma-copy-comments/#if-something-goes-wrong)
+- [What gets copied](https://danbrady.github.io/figma-copy-comments/#what-gets-copied), including the copied-comment format
+- [Good to know](https://danbrady.github.io/figma-copy-comments/#good-to-know): notifications, the exported file, your data, and notes for admins
+- [FAQ](https://danbrady.github.io/figma-copy-comments/#faq)
 
-Open threads have no `Resolved` line, and replies start with `[Copied reply]`. Times are Eastern.
-
-- **Position:** the comment is pinned to the same frame and offset, or to the same canvas spot or region. If a frame can't be found in the file you're copying TO, the comment goes near its old position and a `Location:` line says where it used to be.
-- **Who and when:** Figma's API always posts as the person running the import, at the current time ([POST comments](https://developers.figma.com/docs/rest-api/comments-endpoints/)). The original author and time are in the text, and the raw data is in the exported `.json` file.
-- **Not copied:**
-  - the resolved state itself: Figma's API can't resolve comments, so every copied thread shows as open, and a resolved one says `✅ Resolved` and when in its text. To leave resolved threads out entirely, tick **Skip resolved threads** before Preview.
-  - who resolved a thread (the API doesn't provide it)
-  - images or attachments in comments
-  - live @mentions: they're posted as text, which Figma may rewrite when it saves the comment. The pilot checks whether that notifies anyone.
-- **Safe to re-run:** the plugin recognizes comments it already copied by their author, time, and text (ignoring any `Location:` line), and skips them. Figma sometimes changes comment text when it saves it, for example rewriting @mentions or removing blank lines; those copies are still recognized by the author and time below the `———` line. Identical comments, such as two "+1" replies from the same person in the same second, are counted separately. Two people can work on the same file, or you can retry after an error, without creating duplicates. Editing a copied comment's text by hand makes it unrecognizable, so a re-run would post it again. Preview warns when the file has copied comments that don't match the export file. Export each original file once and reuse that export file for every Import: a newer export, taken after reactions or resolved states changed, won't match comments posted from the older one.
-
----
-
-## For everyone: moving one file
-
-This works in the **browser or the desktop app**. You need a personal access token. A token only works for the account that made it. If one account can open both files, one token is enough; otherwise, make one in each account. To make one, open Home › [Your Name] › Settings › Security › Personal access tokens ([how-to](https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens)).
-
-The first time you open the plugin, a setup screen explains the tokens and how to make them. Name each token something like "Copy Comments", and set its expiration to 1 day; that's enough for a one-time copy. To see it again later, click **Token setup guide** next to either token field's label.
-
-| Token | Make it with | Scopes |
-|---|---|---|
-| Export | an account that can open the file you're copying FROM | `file_comments:read` |
-| Import | an account that can comment on the file you're copying TO | `file_comments:read` **and** `file_comments:write` |
-
-Using one token for both? Give it the Import token's scopes.
-
-Leave every other scope off. Import uses read to preview, skip comments that were already copied, and check the result. It uses write to post, and to remove copied comments if you undo an import. You need to be able to open both files and comment on the file you're copying TO. Copied comments are posted under the name of whoever runs Import.
-
-Whoever runs Import should have a **Full or Dev seat** where the file you're copying TO lives. Figma limits how fast each account can use its API, and View and Collab seats get the lowest limit ([rate limits](https://developers.figma.com/docs/rest-api/rate-limits)). The plugin posts about 40 comments a minute and slows down if Figma asks it to, so 500 comments take about 15 minutes. Removing copied comments runs at the same pace.
-
-### 1. Export (in the file you're copying FROM)
-1. Open the file you're copying FROM and choose **Plugins › Copy Comments**. It opens on the **Export** tab.
-2. Paste the file's link and your **Export** token.
-3. Click **Export comments**. A `<file name> - comments.json` file downloads. Keep it.
-
-### 2. Make the copy
-Duplicate the file you're copying FROM, or choose **File › Save local copy…** and import the `.fig` where you want the copy. If the copy already exists, skip this step.
-
-### 3. Import (in the file you're copying TO)
-1. Open the file you're copying TO, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
-2. Paste that file's link and your **Import** token.
-3. Choose the `.json` file from step 1. To leave out resolved threads and their replies, tick **Skip resolved threads**. To leave out threads pinned to frames that were already deleted when you exported, and their replies, tick **Skip threads whose frame was deleted**; otherwise they're placed near the top-left of the canvas. In long-lived files these are often most of the old threads: in one file we tested, 163 of 230. Then click **Preview** and check the numbers. Preview also checks that the link is for the open file, because pins are matched in the open file but posted to the linked one.
-4. Click **Post comments** and keep the window open until it says **Import complete**.
-
-### If something goes wrong
-If something fails, run **Preview** then **Post comments** again. Comments that were already copied are skipped. Before reporting a comment as missing, the plugin checks the file again for up to 15 seconds, because Figma can take a moment to list new comments. A post that returned an error but did reach the file counts as posted.
-
-If a reply ends up under the wrong thread, Preview and the final message say so and list which ones. Figma can't move a reply, so delete it, then run **Preview** and **Post comments** again to post it in the right thread.
-
-If the plugin says **Don't run Import again on this file**, don't. Figma changed some comments so much, including the author and time below the `———` line, that a re-run can't recognize them and would post them twice. The message lists them, so you can check that they read correctly. How Figma changed the text is in the developer console (**Plugins › Development › Show/Hide console**), for whoever maintains the plugin.
-
-### 4. Undo an import (if needed)
-To take the copied comments back out of the file you're copying TO:
-1. Open that file, choose **Plugins › Copy Comments**, and switch to the **Import** tab.
-2. Paste the file's link and your **Import** token. You don't need the `.json` file.
-3. Click **Remove copied comments from this file…**. The plugin counts the comments that start with `[Copied comment]` or `[Copied reply]`, plus the older `[Migrated comment]` and `[Migrated reply]` labels, and says who posted them. Nothing is removed yet.
-4. Click the red **Remove** button to confirm, or **Cancel**. Keep the window open until it says **Copied comments removed**.
-
-Figma only lets people delete their own comments, so the plugin removes the copies posted by your token's owner and leaves everything else: regular comments and other people's copies. If someone else also ran Import on this file, they can remove theirs with their own token. Removing can't be undone; run Import again to put the comments back.
-
-Restoring an earlier version from the file's version history doesn't remove comments, because Figma doesn't keep comments in version history.
-
-### Good to know
-**Tokens:** the plugin never saves your token, so paste it each time you open the plugin. It's kept in memory only while the window is open, and only ever sent to Figma's API; the manifest blocks every other domain. Earlier versions could save a token; the plugin now deletes any saved token when it opens. See [PRIVACY.md](PRIVACY.md) for everything the plugin reads and keeps.
-
-**The exported file:** the `.json` holds every comment's text, the authors' Figma handles, and the names of the frames comments are pinned to. Treat it like the design file: keep it out of public channels, and delete it once the copied comments are checked.
-
-**Notifications:** posting hundreds of comments may notify people who follow the file you're copying TO. Figma groups its emails, sending them every 30 minutes, and also shows in-app notifications, which can't be turned off ([notification settings](https://help.figma.com/hc/en-us/articles/360041547813-Adjust-comment-notification-settings)). People @mentioned in the copied text may be notified too, whatever their settings, if Figma turns the mention back into a live one. Preview says how many comments mention someone. Neither Figma API shows who follows a file, so tell the people who work on it before you run Import.
-
-**Offline:** every step needs Figma's API. While you're offline the plugin shows a banner, and Export, Preview, Post, and Remove stop with a message to reconnect.
-
----
-
-## For admins
-- **Plugin approval:** if your organization only allows approved plugins, an admin approves Copy Comments from its Community page: **Admin › Resources › Plugins › Add plugin**, then paste the Community link ([Manage plugins](https://help.figma.com/hc/en-us/articles/4404228724759-Manage-plugins-and-widgets-in-an-organization)). If the two files are in different organizations, do this in each.
-- **Network:** allow the API hosts listed under `networkAccess` in `manifest.json`, on port 443.
+What the plugin reads and keeps is in [PRIVACY.md](PRIVACY.md), which the site publishes at [/privacy/](https://danbrady.github.io/figma-copy-comments/privacy/). Both are edited in this repo: the guide in [`site/index.md`](site/index.md), the policy in `PRIVACY.md`.
 
 ---
 
@@ -139,6 +62,14 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `npm run visual-qa` | Rebuilds, then regenerates `docs/visual-qa/`. Fails if a message in `src/ui.ts` isn't reached by any scenario, so add one when you add a message |
 | `npm run listing` | Re-renders the images in `assets/listing/` with your installed Google Chrome (set `CHROME_PATH` to use another). Run it after changing the UI |
 
+### How re-runs recognize copies
+Import skips comments it already copied, so a re-run, a retry after an error, or two people importing into the same file don't create duplicates. `src/logic.ts` matches each planned comment to an existing copy:
+- **By its text:** the label, the original text, and the details below the `———` line, ignoring the last `Location:` line, which changes if frames are fixed between runs (`fingerprint`).
+- **By author and time, if the text changed:** Figma sometimes rewrites comment text when it saves it, for example @mentions or blank lines. Those copies still match on the label plus the author-and-time line below the `———` (`detailsKey`).
+- **One to one:** identical comments, such as two "+1" replies from the same person in the same second, each need their own copy. Exact text is tried before author and time, so it decides between look-alikes.
+
+What breaks matching: editing a copied comment's text by hand, or importing from a newer export taken after reactions or resolved states changed. Preview warns when the file has copied comments that match nothing in the export file. Export each original file once and reuse that export file for every Import.
+
 ### 1. Load the plugin
 Development plugins only work in the **desktop app** ([docs](https://help.figma.com/hc/en-us/articles/360039958874-Make-plugins-for-the-Figma-Community)). The plugin ID is already in `manifest.json`; keep it, because Community publishing and admin approvals are tied to it.
 
@@ -159,7 +90,7 @@ Make a throwaway file containing:
 - a thread with replies, plus one resolved thread and one open thread
 - reactions on a thread and on a reply, an @mention, emoji, and one very long comment
 
-Export it, make the copy (see **Make the copy** above), then run Import in the copy. Use a fresh copy for each pilot run, or remove the previous run's copies first (see **Undo an import** above). Check:
+Export it, [make the copy](https://danbrady.github.io/figma-copy-comments/#2-make-the-copy), then run Import in the copy. Use a fresh copy for each pilot run, or remove the previous run's copies first ([Undo an import](https://danbrady.github.io/figma-copy-comments/#undo-an-import)). Check:
 - [ ] The final message says **Import complete** (no missing comments, no misplaced replies). Open a few copied comments with @mentions or blank lines and check that they read correctly; Figma may have rewritten them. If the final message says **Don't run Import again on this file** instead, copy the examples of the changed text from the developer console, because the plugin's message format needs to change before anyone else imports.
 - [ ] Pins sit on the same frames and offsets. Note which **page** the canvas pins and canvas regions land on, because those positions carry no page.
 - [ ] Headers read correctly, and the long comment wasn't rejected.
