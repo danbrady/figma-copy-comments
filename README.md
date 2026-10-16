@@ -102,7 +102,7 @@ Export it, [make the copy](https://danbrady.github.io/figma-copy-comments/#2-mak
 ### 4. Publish and approve
 1. Publish to Figma Community under a team or organization profile ([how-to](https://help.figma.com/hc/en-us/articles/360042293394-Publish-classic-plugins-to-the-Figma-Community)). Figma reviews it first, which takes some time.
    Upload the images from `assets/listing/`: `icon.png` as the icon, `cover.png` as the thumbnail, and the three `carousel-*.png` images, in order, as the carousel.
-   Paste the name, description, tags, and support contact from [`assets/listing/listing.md`](assets/listing/listing.md). Its links point to the user guide and privacy policy on GitHub Pages, which `.github/workflows/pages.yml` publishes from `site/` and `PRIVACY.md`.
+   [`assets/listing/listing.md`](assets/listing/listing.md) has every field the publish form asks for, screen by screen: name, tagline, description, and category; the images; answers for the optional **Data security** form; and the final details, including the support contact. Its links point to the user guide and privacy policy on GitHub Pages, which `.github/workflows/pages.yml` publishes from `site/` and `PRIVACY.md`.
 2. If plugin approval is turned on, have the admins of each organization involved approve the Community link.
 3. Repeat the pilot's Import step **in a browser** with the published version.
 
