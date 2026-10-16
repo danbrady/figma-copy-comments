@@ -10,7 +10,8 @@
     "lint:fix": "eslint src --fix",
     "test": "node scripts/build.mjs --with-tests && node --test test/logic.test.js test/main.test.js",
     "check": "npm run typecheck && npm run lint && npm test",
-    "listing": "node scripts/listing.mjs"
+    "listing": "node scripts/listing.mjs",
+    "visual-qa": "node scripts/build.mjs && node scripts/visual-qa/run.mjs"
   },
   "engines": {
     "node": ">=20"
