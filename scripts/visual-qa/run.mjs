@@ -107,7 +107,8 @@ async function runScenario(browser, scenario, theme, shots) {
     bridgeRelease: () => page.evaluate(() => { window.__bridge.hold = {}; window.__bridge.release(); }),
     async shot(group, id, name, when) {
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({ path: join(out, 'png', id + '.' + theme + '.png'), fullPage: true });
+      // Animations are stopped so the spinner looks the same each run and unchanged screens stay byte-identical.
+      await page.screenshot({ path: join(out, 'png', id + '.' + theme + '.png'), fullPage: true, animations: 'disabled' });
       if (!shots.has(id)) shots.set(id, { group, id, name, when, text: await page.evaluate(captureText) });
     },
   };

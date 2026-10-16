@@ -150,8 +150,8 @@ If Figma says it can't find `dist/code.js` or `dist/ui.html`, the build hasn't r
 ### 2. Spike: confirm the unknowns before anything else
 - [ ] **Export:** run Export on a test file. Check that the `.json` downloads and the counts look right.
 - [ ] **Plugin can run:** do development plugins run in the organization you're copying TO? If not, this check moves to after the Community publish (step 4).
-- [ ] **API reachable:** Import's **Preview** calls `GET /v1/files/:key/comments` on the API of the Figma site the file is on. A plugin's UI has a `null` origin, so this only works if that API allows cross-origin requests ([network requests](https://developers.figma.com/docs/plugins/making-network-requests/)). If you see "Could not reach …", use the fallback below.
-- [ ] **Posting and removing:** **Post comments** and **Remove copied comments** send POST and DELETE requests. Browsers check those separately from GET (a CORS preflight), so confirm both work, not just Preview.
+- [x] **API reachable:** checked October 16, 2026. From a sandboxed iframe in Chrome (origin `null`, like a plugin window), GET, POST, and DELETE to both `api.figma.com` and `api.figma-gov.com` returned readable responses: both send `Access-Control-Allow-Origin: *`, allow the `X-Figma-Token` and `Content-Type` headers, and expose `Retry-After`. The check used a fake token, so the first real Preview in the pilot confirms it with a real one. Import's **Preview** calls `GET /v1/files/:key/comments` on the API of the Figma site the file is on. A plugin's UI has a `null` origin, so this only works if that API allows cross-origin requests ([network requests](https://developers.figma.com/docs/plugins/making-network-requests/)). If you see "Could not reach …", use the fallback below.
+- [ ] **Posting and removing:** **Post comments** and **Remove copied comments** send POST and DELETE requests. Browsers check those separately from GET (a CORS preflight). The preflight passes on both hosts (checked October 16, 2026); confirm real posts and removals work in the pilot.
 
 ### 3. Pilot
 Make a throwaway file containing:
