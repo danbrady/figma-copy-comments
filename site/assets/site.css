@@ -10,7 +10,8 @@
   --code-bg: #eef3f9;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --measure: 68ch;
+  /* In rem, not ch: ch scales with each element's font size, so headings would get a wider column. */
+  --measure: 42rem;
 }
 @media (prefers-color-scheme: dark) {
   :root {
