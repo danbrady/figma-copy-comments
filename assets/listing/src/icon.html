@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Icon</title>
+<link rel="stylesheet" href="listing.css">
+<style>
+  body { --w: 128px; --h: 128px; background: var(--brand); }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<!-- Two comment pins: a dashed one behind (the original) and a solid one in front (its copy).
+     Full bleed, since Figma rounds the corners. pathLength makes the dashes even all the way round. -->
+<svg width="128" height="128" viewBox="0 0 128 128" aria-hidden="true">
+  <defs>
+    <path id="pin" pathLength="100" d="M0 100V50a50 50 0 0 1 50-50a50 50 0 0 1 50 50a50 50 0 0 1-50 50z"/>
+  </defs>
+  <g transform="translate(20 18) scale(0.6)">
+    <use href="#pin" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="11"
+      stroke-dasharray="5.5 4.5" stroke-linecap="round"/>
+  </g>
+  <!-- The back pin's text, in the same place as the front pin's. -->
+  <g fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="5.5" stroke-linecap="round">
+    <path d="M37 40h24"/>
+    <path d="M37 51h11"/>
+  </g>
+  <!-- The blue stroke under the fill leaves a gap where the front pin overlaps the back one. -->
+  <g transform="translate(46 44) scale(0.64)">
+    <use href="#pin" fill="#fff" stroke="#0d99ff" stroke-width="12" paint-order="stroke"/>
+  </g>
+  <g fill="none" stroke="#0d99ff" stroke-width="6" stroke-linecap="round">
+    <path d="M64 70h28"/>
+    <path d="M64 84h18"/>
+  </g>
+</svg>
+<script src="plugin-window.js"></script>
+</body>
+</html>

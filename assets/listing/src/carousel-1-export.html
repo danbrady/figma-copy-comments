@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Carousel 1: Export</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=block">
+<link rel="stylesheet" href="listing.css">
+<style>
+  body { --w: 1920px; --h: 1080px; }
+  .plugin-window { left: 1080px; top: 48px; }
+  .download {
+    position: absolute; left: 120px; top: 820px; display: flex; align-items: center; gap: 18px;
+    padding: 20px 28px 20px 20px; background: var(--bg); border-radius: 16px; box-shadow: var(--shadow);
+    font-size: 24px; font-weight: 600;
+  }
+  .download .doc {
+    width: 56px; height: 64px; border-radius: 8px; background: var(--brand-tint); color: var(--brand-text);
+    display: grid; place-items: center; font-size: 15px; font-weight: 700;
+  }
+  .download small { display: block; font-size: 19px; font-weight: 400; color: var(--text-2); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <span class="step-badge"><b>1</b>Export</span>
+  <h1>Save the comments from the original file</h1>
+  <p>Run the plugin in the file you're copying <strong>FROM</strong>. Every thread and reply downloads as one <strong>.json</strong> file.</p>
+</div>
+<div class="wordmark"><img src="../icon.png" alt="">Copy Comments</div>
+
+<div class="plugin-window" data-panel="export" data-scale="1.4"></div>
+
+<div class="download">
+  <span class="doc">JSON</span>
+  <span>Checkout redesign - comments.json<small>Downloaded</small></span>
+</div>
+
+<script>
+  window.demo = {
+    export(doc) {
+      doc.getElementById('ex-link').value = 'https://www.figma.com/design/k3J9xQ/Checkout-redesign';
+      doc.getElementById('ex-token').value = 'figd_demo_token_value';
+      doc.getElementById('ex-again').hidden = false;
+      PluginUI.setStatus(doc, 'ex-status', { kind: 'success', title: 'Export complete',
+        body: '236 comments were saved to “Checkout redesign - comments.json”.',
+        note: '7 threads are pinned to deleted frames. On import, they go to the top-left of the canvas unless you tick ' +
+          '<strong>Skip threads whose frame was deleted</strong>.' });
+      PluginUI.renderSummary(doc, 'ex-summary', [
+        ['Threads', 84], ['Replies', 152], ['Resolved threads', 31], ['Pinned to frames', 77],
+      ]);
+    },
+  };
+</script>
+<script src="plugin-window.js"></script>
+</body>
+</html>

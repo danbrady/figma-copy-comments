@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Carousel 3: Result</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=block">
+<link rel="stylesheet" href="listing.css">
+<style>
+  body { --w: 1920px; --h: 1080px; }
+
+  /* A frame on the canvas of the file copied TO. */
+  .frame-label { position: absolute; left: 900px; top: 196px; font-size: 20px; color: var(--text-2); }
+  .frame { position: absolute; left: 900px; top: 230px; width: 400px; height: 640px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  .frame i { position: absolute; left: 32px; right: 32px; height: 18px; border-radius: 9px; background: #ececec; }
+  .frame i.field { height: 56px; border-radius: 8px; background: var(--bg); border: 2px solid #ececec; }
+  .frame i.btn { height: 64px; border-radius: 10px; background: var(--brand); opacity: 0.85; }
+
+  /* An open comment thread, in the style of Figma's comment popover. */
+  .thread {
+    position: absolute; left: 1250px; top: 120px; width: 600px; background: var(--bg); border-radius: 18px;
+    box-shadow: var(--shadow); font-size: 21px; line-height: 1.5;
+  }
+  .thread header {
+    height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px;
+    border-bottom: 1px solid var(--border); font-size: 22px; font-weight: 600;
+  }
+  .thread header svg { width: 22px; height: 22px; color: var(--text-2); }
+  .comment { display: grid; grid-template-columns: 44px 1fr; gap: 0 16px; padding: 24px 28px; }
+  .comment + .comment { border-top: 1px solid var(--border); }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: #fff; font-size: 17px; font-weight: 600; }
+  .who { font-weight: 600; }
+  .who span { margin-left: 10px; font-weight: 400; color: var(--text-2); }
+  /* Plain text, as Figma shows it: the plugin can only post text, so nothing is styled. */
+  .text { grid-column: 2; white-space: pre-wrap; }
+
+  .callout {
+    position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 999px;
+    background: var(--text); color: #fff; font-size: 19px; font-weight: 600; white-space: nowrap;
+  }
+  .callout::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+</style>
+</head>
+<body>
+<div class="caption">
+  <span class="step-badge"><b>3</b>Done</span>
+  <h1>Every thread, in the same place</h1>
+  <p>Comments land on the same frames and replies stay in order. Each one keeps its <strong>original author, time, resolved status, and reactions</strong> in its text.</p>
+</div>
+<div class="wordmark"><img src="../icon.png" alt="">Copy Comments</div>
+
+<span class="frame-label">Payment</span>
+<div class="frame">
+  <i style="top:44px;right:180px;height:26px;border-radius:13px"></i>
+  <i style="top:110px;right:220px"></i>
+  <i class="field" style="top:140px"></i>
+  <i style="top:230px;right:240px"></i>
+  <i class="field" style="top:260px"></i>
+  <i style="top:350px;right:200px"></i>
+  <i class="field" style="top:380px"></i>
+  <i class="btn" style="top:520px"></i>
+</div>
+<div class="pin" style="left:1170px;top:690px;transform:scale(1.2)"><span style="background:var(--brand)">JP</span></div>
+
+<div class="thread">
+  <header>Comment<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></header>
+  <div class="comment">
+    <span class="avatar">JP</span>
+    <span class="who">Jordan Park<span>Just now</span></span>
+    <div class="text">[Copied comment]
+Can we bump the button contrast? It fails AA on hover.
+———
+alex.rivera · Oct 1, 2026, 9:52:14 AM ET
+✅ Resolved Oct 1, 2026, 1:20:05 PM ET
+Reactions: :+1: ×3 (A. Lee, B. Ortiz, C. Kim)</div>
+  </div>
+  <div class="comment">
+    <span class="avatar">JP</span>
+    <span class="who">Jordan Park<span>Just now</span></span>
+    <div class="text">[Copied reply]
+Darkened it to #0b5cad. Passes now.
+———
+b.ortiz · Oct 1, 2026, 1:19:40 PM ET</div>
+  </div>
+</div>
+
+<span class="callout" style="left:1290px;top:930px">Safe to re-run: copies are never posted twice</span>
+
+<script src="plugin-window.js"></script>
+</body>
+</html>
