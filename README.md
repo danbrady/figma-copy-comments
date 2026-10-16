@@ -35,7 +35,8 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `src/ui.html` | UI markup and styles. The build inlines the compiled `ui.ts` into `dist/ui.html`, since a plugin's UI is a single HTML file |
 | `scripts/build.mjs` | The esbuild build: `dist/code.js`, `dist/ui.html`, and (for tests) `dist/test/logic.cjs` |
 | `scripts/visual-qa/` | `npm run visual-qa`: drives the built UI against a fake Figma (`fake-figma.mjs`) through every scenario (`scenarios.mjs`) and writes the report (`report.mjs`) |
-| `docs/visual-qa/` | Every screen and message, generated: `index.html` (screenshots in light and dark, with what makes each appear) and `messages.md` (all message text). The screenshots in `png/` aren't committed, so run `npm run visual-qa` to see them |
+| `docs/visual-qa/` | Every screen and message, generated. `messages.md` (all message text, with what makes each appear) is committed, and CI checks it's current. `index.html` and the screenshots in `png/`, in light and dark, aren't committed: run `npm run visual-qa`, or download them from the **Visual QA** check on any pull request |
+| `scripts/chrome.mjs` | Starts Google Chrome (or `CHROME_PATH`) for `npm run listing` and `npm run visual-qa`, with a plain error if it's missing |
 | `scripts/listing.mjs` | Renders the Community listing images in `assets/listing/` from the pages in `assets/listing/src/` |
 | `site/` | The GitHub Pages site the Community listing links to: the user guide (`index.md`), layout, and styles. `.github/workflows/pages.yml` builds it with Jekyll and adds `PRIVACY.md` and the listing images |
 | `PRIVACY.md` | The privacy policy: what the plugin reads, where it goes, and what it keeps. Figma requires one for plugins that handle user data |
@@ -46,7 +47,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `test/logic.test.js` | Unit tests for `src/logic.ts`, plus a check that the built `dist/ui.html` script parses |
 | `test/main.test.js` | Tests for the built `dist/code.js`, run against a small fake of the Figma Plugin API |
 | `.vscode/tasks.json` | **Cmd+Shift+B** (Ctrl+Shift+B on Windows) starts `npm run watch` |
-| `.github/workflows/test.yml` | Runs typecheck, lint, and tests on Node 20, 22, and 24 for every push and pull request |
+| `.github/workflows/test.yml` | Runs typecheck, lint, and tests on Node 20, 22, and 24 for every push and pull request, and the **Visual QA** check: `npm run visual-qa`, failing if `messages.md` is out of date, with the screenshots attached as an artifact |
 | `.gitignore` | Keeps `dist/`, `node_modules/`, and exported comment files (`*comments*.json`) out of the repo |
 | `.editorconfig` | Two-space indents, LF line endings |
 
@@ -59,7 +60,7 @@ The plugin is written in TypeScript, following Figma's setup: [`@figma/plugin-ty
 | `npm run lint` | Runs Figma's ESLint rules on `src/` |
 | `npm test` | Builds, then runs the tests |
 | `npm run check` | All three checks: typecheck, lint, and tests |
-| `npm run visual-qa` | Rebuilds, then regenerates `docs/visual-qa/`. Fails if a message in `src/ui.ts` isn't reached by any scenario, so add one when you add a message |
+| `npm run visual-qa` | Rebuilds, then regenerates `docs/visual-qa/`. Needs Google Chrome (or `CHROME_PATH`) and an internet connection, for the Inter font. Fails if a message in `src/ui.ts` isn't reached by any scenario, so add one when you add a message. Commit the updated `messages.md`; CI fails if it's out of date |
 | `npm run listing` | Re-renders the images in `assets/listing/` with your installed Google Chrome (set `CHROME_PATH` to use another). Run it after changing the UI |
 
 ### How re-runs recognize copies

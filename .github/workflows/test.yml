@@ -23,3 +23,33 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+
+  # Regenerates docs/visual-qa/ against a fake Figma. Fails if a message in src/ui.ts isn't
+  # reached, or if the committed messages.md doesn't match the UI. The screenshots and
+  # index.html, which aren't committed, are attached to the run for reviewers.
+  visual-qa:
+    name: Visual QA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run visual-qa
+      - name: Check messages.md is current
+        run: |
+          if ! git diff --exit-code -- docs/visual-qa/messages.md; then
+            echo "::error file=docs/visual-qa/messages.md::messages.md is out of date. Run npm run visual-qa and commit the result."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-qa
+          path: |
+            docs/visual-qa/index.html
+            docs/visual-qa/png/
+          if-no-files-found: ignore
+          retention-days: 14

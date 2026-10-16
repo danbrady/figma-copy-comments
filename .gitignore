@@ -7,8 +7,10 @@ dist/
 .DS_Store
 node_modules/
 
-# Visual QA screenshots: about 14 MB, and rewritten on every run. Make them with `npm run visual-qa`.
+# Visual QA screenshots and the page that shows them: about 14 MB, and rewritten on every run.
+# Make them with `npm run visual-qa`. docs/visual-qa/messages.md is committed.
 docs/visual-qa/png/
+docs/visual-qa/index.html
 
 # Copied into site/ by .github/workflows/pages.yml at build time.
 site/privacy.md
