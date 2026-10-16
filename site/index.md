@@ -12,7 +12,7 @@ Duplicating a file, or saving it as a `.fig` and importing it, leaves its commen
 
 <div class="cover wide"><img src="{{ '/images/cover.png' | relative_url }}" alt="Two Figma files, FROM and TO, with comment pins in the same places, and a pin moving from one to the other."></div>
 
-**On this page:** [Before you start](#before-you-start) · [Export](#1-export) · [Make the copy](#2-make-the-copy) · [Import](#3-import) · [Undo an import](#undo-an-import) · [If something goes wrong](#if-something-goes-wrong) · [What gets copied](#what-gets-copied) · [Good to know](#good-to-know) · [Help](#help)
+**On this page:** [Before you start](#before-you-start) · [Export](#1-export) · [Make the copy](#2-make-the-copy) · [Import](#3-import) · [Undo an import](#undo-an-import) · [If something goes wrong](#if-something-goes-wrong) · [What gets copied](#what-gets-copied) · [Good to know](#good-to-know) · [FAQ](#faq) · [Help](#help)
 
 ## Before you start
 
@@ -125,6 +125,60 @@ Open threads have no Resolved line, and replies start with `[Copied reply]`. Tim
 **Your data.** The plugin only talks to Figma's API. It has no servers, collects no analytics, and never saves your token. The [privacy policy]({{ '/privacy/' | relative_url }}) lists everything it reads and keeps.
 
 **For admins.** If your organization only allows approved plugins, an admin approves Copy Comments from its Community page under **Admin › Resources › Plugins › Add plugin** ([Manage plugins](https://help.figma.com/hc/en-us/articles/4404228724759-Manage-plugins-and-widgets-in-an-organization)). If the two files are in different organizations, do this in each. On restricted networks, allow `api.figma.com` (and `api.figma-gov.com` for Figma for Government) on port 443.
+
+## FAQ
+
+### Can I copy comments between different accounts or organizations?
+
+Yes. Export with a token from an account that can open the original file, and Import with a token from an account that can comment on the copy. See [Before you start](#before-you-start).
+
+### Why does it need a personal access token?
+
+Figma's plugin API can't read or post comments. Figma's REST API can, and it needs a token to know which account is asking.
+
+### Is my token saved or shared?
+
+No. The plugin keeps it in memory only while its window is open and sends it only to Figma's API. Closing the window discards it. See the [privacy policy]({{ '/privacy/' | relative_url }}).
+
+### Why are copied comments posted under my name?
+
+Figma's API always posts as the account that owns the token, at the current time. That's why each copied comment has the original author and time written into its text.
+
+### Why do resolved threads show as open?
+
+Figma's API can't resolve comments, so every copied thread starts open. A thread that was resolved says ✅ Resolved and when in its text. To leave resolved threads out, tick **Skip resolved threads** before Preview.
+
+### Will people be notified?
+
+People who follow the file you're copying to may be, and so may people @mentioned in the copied text. Preview says how many comments mention someone. See [Good to know](#good-to-know).
+
+### How long does it take?
+
+About 40 comments a minute, so 500 comments take about 15 minutes. If the person running Import has a View or Collab seat, Figma limits their account much more, so it can take far longer. Keep the plugin window open until it finishes.
+
+### Can I run Import again, or pick up after it stops?
+
+Yes. Click **Preview**, then **Post comments** again. Comments that were already copied are skipped, so nothing is posted twice.
+
+### Can I undo an import?
+
+Yes. **Remove copied comments from this file…** on the Import tab removes the copies posted by your token's owner. See [Undo an import](#undo-an-import).
+
+### What happens to comments already in the file I'm copying to?
+
+Nothing. The plugin never changes or removes them. Removing copied comments only touches copies the plugin posted.
+
+### Can I copy only some of the comments?
+
+Only with the two skip options: **Skip resolved threads** and **Skip threads whose frame was deleted**. You can't pick comments by page or frame.
+
+### Are images and attachments copied?
+
+No. Only the text is copied, along with the details the plugin writes into it.
+
+### Does it work with branches, FigJam, or Figma for Government?
+
+Branches: yes, paste the branch's link. Figma for Government: yes, with a token made there. FigJam and Slides: no, Copy Comments works in Figma Design files only.
 
 ## Help
 
